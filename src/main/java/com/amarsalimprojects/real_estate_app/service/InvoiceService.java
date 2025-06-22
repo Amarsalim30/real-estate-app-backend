@@ -9,10 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.model.Invoice;
 import com.amarsalimprojects.real_estate_app.model.Payment;
 import com.amarsalimprojects.real_estate_app.model.Unit;
-import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 

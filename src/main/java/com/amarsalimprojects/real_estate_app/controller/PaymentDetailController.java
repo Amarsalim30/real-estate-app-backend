@@ -4,6 +4,7 @@ import com.amarsalimprojects.real_estate_app.model.PaymentDetail;
 import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
 import com.amarsalimprojects.real_estate_app.repository.PaymentDetailRepository;
+import com.amarsalimprojects.real_estate_app.service.PaymentDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,24 +24,24 @@ public class PaymentDetailController {
     @Autowired
     private PaymentDetailRepository paymentDetailRepository;
 
+    @Autowired
+    private PaymentDetailService paymentDetailService;
+
     // CREATE - Add a new payment detail
     @PostMapping
     public ResponseEntity<PaymentDetail> createPaymentDetail(@RequestBody PaymentDetail paymentDetail) {
         try {
-            // Check if payment number already exists (if provided)
-            if (paymentDetail.getPaymentNumber() != null && !paymentDetail.getPaymentNumber().isEmpty()) {
-                Optional<PaymentDetail> existingPaymentDetail = paymentDetailRepository.findByPaymentNumber(paymentDetail.getPaymentNumber());
-                if (existingPaymentDetail.isPresent()) {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-                }
-            }
-
             // Check if transaction ID already exists (if provided)
             if (paymentDetail.getTransactionId() != null && !paymentDetail.getTransactionId().isEmpty()) {
                 Optional<PaymentDetail> existingPaymentDetail = paymentDetailRepository.findByTransactionId(paymentDetail.getTransactionId());
                 if (existingPaymentDetail.isPresent()) {
                     return new ResponseEntity<>(null, HttpStatus.CONFLICT);
                 }
+            }
+
+            // Set default status if not provided
+            if (paymentDetail.getStatus() == null) {
+                paymentDetail.setStatus(PaymentStatus.PENDING);
             }
 
             PaymentDetail savedPaymentDetail = paymentDetailRepository.save(paymentDetail);
@@ -69,21 +70,6 @@ public class PaymentDetailController {
     public ResponseEntity<PaymentDetail> getPaymentDetailById(@PathVariable("id") Long id) {
         try {
             Optional<PaymentDetail> paymentDetail = paymentDetailRepository.findById(id);
-            if (paymentDetail.isPresent()) {
-                return new ResponseEntity<>(paymentDetail.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get payment detail by payment number
-    @GetMapping("/payment-number/{paymentNumber}")
-    public ResponseEntity<PaymentDetail> getPaymentDetailByPaymentNumber(@PathVariable("paymentNumber") String paymentNumber) {
-        try {
-            Optional<PaymentDetail> paymentDetail = paymentDetailRepository.findByPaymentNumber(paymentNumber);
             if (paymentDetail.isPresent()) {
                 return new ResponseEntity<>(paymentDetail.get(), HttpStatus.OK);
             } else {
@@ -127,7 +113,7 @@ public class PaymentDetailController {
     @GetMapping("/method/{method}")
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByMethod(@PathVariable("method") PaymentMethod method) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentMethod(method);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByMethod(method);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -156,6 +142,20 @@ public class PaymentDetailController {
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByInvoiceId(@PathVariable("invoiceId") Long invoiceId) {
         try {
             List<PaymentDetail> paymentDetails = paymentDetailRepository.findByInvoiceId(invoiceId);
+            if (paymentDetails.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // READ - Get payment details by payment ID
+    @GetMapping("/payment/{paymentId}")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByPaymentId(@PathVariable("paymentId") Long paymentId) {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentId(paymentId);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -203,7 +203,7 @@ public class PaymentDetailController {
             @PathVariable("method") PaymentMethod method,
             @PathVariable("status") PaymentStatus status) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentMethodAndStatus(method, status);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByMethodAndStatus(method, status);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -219,7 +219,7 @@ public class PaymentDetailController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startDate, endDate);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCreatedAtBetween(startDate, endDate);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -252,7 +252,7 @@ public class PaymentDetailController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByStatusAndPaymentDateBetween(status, startDate, endDate);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByStatusAndCreatedAtBetween(status, startDate, endDate);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -262,25 +262,11 @@ public class PaymentDetailController {
         }
     }
 
-    // READ - Get payment details by processing fee greater than
-    @GetMapping("/processing-fee/{fee}")
-    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByProcessingFeeGreaterThan(@PathVariable("fee") BigDecimal fee) {
-        try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByProcessingFeeGreaterThan(fee);
-            if (paymentDetails.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get payment details by bank name
+    // READ - Get payment details by bank name (from embedded BankDetails)
     @GetMapping("/bank/{bankName}")
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByBankName(@PathVariable("bankName") String bankName) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByBankName(bankName);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByBankDetailsBankName(bankName);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -290,11 +276,11 @@ public class PaymentDetailController {
         }
     }
 
-    // READ - Get payment details by card brand
+    // READ - Get payment details by card brand (from embedded CardDetails)
     @GetMapping("/card-brand/{brand}")
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByCardBrand(@PathVariable("brand") String brand) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCardBrand(brand);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCardDetailsBrand(brand);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -304,11 +290,11 @@ public class PaymentDetailController {
         }
     }
 
-    // READ - Get payment detail by check number
+    // READ - Get payment detail by check number (from embedded CheckDetails)
     @GetMapping("/check/{checkNumber}")
     public ResponseEntity<PaymentDetail> getPaymentDetailByCheckNumber(@PathVariable("checkNumber") String checkNumber) {
         try {
-            Optional<PaymentDetail> paymentDetail = paymentDetailRepository.findByCheckNumber(checkNumber);
+            Optional<PaymentDetail> paymentDetail = paymentDetailRepository.findByCheckDetailsCheckNumber(checkNumber);
             if (paymentDetail.isPresent()) {
                 return new ResponseEntity<>(paymentDetail.get(), HttpStatus.OK);
             } else {
@@ -329,26 +315,15 @@ public class PaymentDetailController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    // READ - Get total processing fee by status
-    @GetMapping("/total-processing-fee/status/{status}")
-    public ResponseEntity<BigDecimal> getTotalProcessingFeeByStatus(@PathVariable("status") PaymentStatus status) {
-        try {
-            BigDecimal totalProcessingFee = paymentDetailRepository.getTotalProcessingFeeByStatus(status);
-            return new ResponseEntity<>(totalProcessingFee != null ? totalProcessingFee : BigDecimal.ZERO, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // READ - Get count by payment method and status
+
     @GetMapping("/count/method/{method}/status/{status}")
-    public ResponseEntity<Long> getCountByPaymentMethodAndStatus(
+    public ResponseEntity<Long> getCountByMethodAndStatus(
             @PathVariable("method") PaymentMethod method,
             @PathVariable("status") PaymentStatus status) {
         try {
-            Long count = paymentDetailRepository.countByPaymentMethodAndStatus(method, status);
-            return new ResponseEntity<>(count, HttpStatus.OK);
+            Long count = paymentDetailRepository.countByMethodAndStatus(method, status);
+            return new ResponseEntity<>(count != null ? count : 0L, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -362,18 +337,14 @@ public class PaymentDetailController {
             if (existingPaymentDetail.isPresent()) {
                 PaymentDetail paymentDetailToUpdate = existingPaymentDetail.get();
 
-                // Update fields
-                paymentDetailToUpdate.setPaymentNumber(paymentDetail.getPaymentNumber());
+                // Update fields that exist in the model
+                paymentDetailToUpdate.setAmount(paymentDetail.getAmount());
+                paymentDetailToUpdate.setStatus(paymentDetail.getStatus());
+                paymentDetailToUpdate.setMethod(paymentDetail.getMethod());
+                paymentDetailToUpdate.setTransactionId(paymentDetail.getTransactionId());
                 paymentDetailToUpdate.setBuyer(paymentDetail.getBuyer());
                 paymentDetailToUpdate.setInvoice(paymentDetail.getInvoice());
-                paymentDetailToUpdate.setAmount(paymentDetail.getAmount());
-                paymentDetailToUpdate.setProcessingFee(paymentDetail.getProcessingFee());
-                paymentDetailToUpdate.setPaymentMethod(paymentDetail.getPaymentMethod());
-                paymentDetailToUpdate.setPaymentDate(paymentDetail.getPaymentDate());
-                paymentDetailToUpdate.setStatus(paymentDetail.getStatus());
-                paymentDetailToUpdate.setTransactionId(paymentDetail.getTransactionId());
-                paymentDetailToUpdate.setDescription(paymentDetail.getDescription());
-                paymentDetailToUpdate.setNotes(paymentDetail.getNotes());
+                paymentDetailToUpdate.setPayment(paymentDetail.getPayment());
                 paymentDetailToUpdate.setBankDetails(paymentDetail.getBankDetails());
                 paymentDetailToUpdate.setCardDetails(paymentDetail.getCardDetails());
                 paymentDetailToUpdate.setCheckDetails(paymentDetail.getCheckDetails());
@@ -397,8 +368,17 @@ public class PaymentDetailController {
                 PaymentDetail paymentDetailToUpdate = existingPaymentDetail.get();
 
                 // Update only non-null fields
-                if (paymentDetail.getPaymentNumber() != null) {
-                    paymentDetailToUpdate.setPaymentNumber(paymentDetail.getPaymentNumber());
+                if (paymentDetail.getAmount() != null) {
+                    paymentDetailToUpdate.setAmount(paymentDetail.getAmount());
+                }
+                if (paymentDetail.getStatus() != null) {
+                    paymentDetailToUpdate.setStatus(paymentDetail.getStatus());
+                }
+                if (paymentDetail.getMethod() != null) {
+                    paymentDetailToUpdate.setMethod(paymentDetail.getMethod());
+                }
+                if (paymentDetail.getTransactionId() != null) {
+                    paymentDetailToUpdate.setTransactionId(paymentDetail.getTransactionId());
                 }
                 if (paymentDetail.getBuyer() != null) {
                     paymentDetailToUpdate.setBuyer(paymentDetail.getBuyer());
@@ -406,29 +386,8 @@ public class PaymentDetailController {
                 if (paymentDetail.getInvoice() != null) {
                     paymentDetailToUpdate.setInvoice(paymentDetail.getInvoice());
                 }
-                if (paymentDetail.getAmount() != null) {
-                    paymentDetailToUpdate.setAmount(paymentDetail.getAmount());
-                }
-                if (paymentDetail.getProcessingFee() != null) {
-                    paymentDetailToUpdate.setProcessingFee(paymentDetail.getProcessingFee());
-                }
-                if (paymentDetail.getPaymentMethod() != null) {
-                    paymentDetailToUpdate.setPaymentMethod(paymentDetail.getPaymentMethod());
-                }
-                if (paymentDetail.getPaymentDate() != null) {
-                    paymentDetailToUpdate.setPaymentDate(paymentDetail.getPaymentDate());
-                }
-                if (paymentDetail.getStatus() != null) {
-                    paymentDetailToUpdate.setStatus(paymentDetail.getStatus());
-                }
-                if (paymentDetail.getTransactionId() != null) {
-                    paymentDetailToUpdate.setTransactionId(paymentDetail.getTransactionId());
-                }
-                if (paymentDetail.getDescription() != null) {
-                    paymentDetailToUpdate.setDescription(paymentDetail.getDescription());
-                }
-                if (paymentDetail.getNotes() != null) {
-                    paymentDetailToUpdate.setNotes(paymentDetail.getNotes());
+                if (paymentDetail.getPayment() != null) {
+                    paymentDetailToUpdate.setPayment(paymentDetail.getPayment());
                 }
                 if (paymentDetail.getBankDetails() != null) {
                     paymentDetailToUpdate.setBankDetails(paymentDetail.getBankDetails());
@@ -488,14 +447,33 @@ public class PaymentDetailController {
         }
     }
 
-    // UPDATE - Update processing fee
-    @PatchMapping("/{id}/processing-fee")
-    public ResponseEntity<PaymentDetail> updateProcessingFee(@PathVariable("id") Long id, @RequestParam("processingFee") BigDecimal processingFee) {
+    // UPDATE - Update payment detail method
+    @PatchMapping("/{id}/method")
+    public ResponseEntity<PaymentDetail> updatePaymentDetailMethod(@PathVariable("id") Long id, @RequestParam("method") PaymentMethod method) {
         try {
             Optional<PaymentDetail> existingPaymentDetail = paymentDetailRepository.findById(id);
             if (existingPaymentDetail.isPresent()) {
                 PaymentDetail paymentDetailToUpdate = existingPaymentDetail.get();
-                paymentDetailToUpdate.setProcessingFee(processingFee);
+                paymentDetailToUpdate.setMethod(method);
+
+                PaymentDetail updatedPaymentDetail = paymentDetailRepository.save(paymentDetailToUpdate);
+                return new ResponseEntity<>(updatedPaymentDetail, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // UPDATE - Update transaction ID
+    @PatchMapping("/{id}/transaction-id")
+    public ResponseEntity<PaymentDetail> updateTransactionId(@PathVariable("id") Long id, @RequestParam("transactionId") String transactionId) {
+        try {
+            Optional<PaymentDetail> existingPaymentDetail = paymentDetailRepository.findById(id);
+            if (existingPaymentDetail.isPresent()) {
+                PaymentDetail paymentDetailToUpdate = existingPaymentDetail.get();
+                paymentDetailToUpdate.setTransactionId(transactionId);
 
                 PaymentDetail updatedPaymentDetail = paymentDetailRepository.save(paymentDetailToUpdate);
                 return new ResponseEntity<>(updatedPaymentDetail, HttpStatus.OK);
@@ -585,27 +563,11 @@ public class PaymentDetailController {
         }
     }
 
-    // DELETE - Delete payment details by invoice ID
-    @DeleteMapping("/invoice/{invoiceId}")
-    public ResponseEntity<HttpStatus> deletePaymentDetailsByInvoiceId(@PathVariable("invoiceId") Long invoiceId) {
+    // DELETE - Delete payment details by payment ID
+    @DeleteMapping("/payment/{paymentId}")
+    public ResponseEntity<HttpStatus> deletePaymentDetailsByPaymentId(@PathVariable("paymentId") Long paymentId) {
         try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByInvoiceId(invoiceId);
-            if (!paymentDetails.isEmpty()) {
-                paymentDetailRepository.deleteAll(paymentDetails);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // DELETE - Delete payment details by payment method
-    @DeleteMapping("/method/{method}")
-    public ResponseEntity<HttpStatus> deletePaymentDetailsByMethod(@PathVariable("method") PaymentMethod method) {
-        try {
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentMethod(method);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentId(paymentId);
             if (!paymentDetails.isEmpty()) {
                 paymentDetailRepository.deleteAll(paymentDetails);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -644,9 +606,9 @@ public class PaymentDetailController {
     @GetMapping("/today")
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsToday() {
         try {
-            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfDay, endOfDay);
+            LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCreatedAtBetween(startOfDay, endOfDay);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -661,9 +623,9 @@ public class PaymentDetailController {
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsThisWeek() {
         try {
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfWeek = now.minusDays(now.getDayOfWeek().getValue() - 1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfWeek = startOfWeek.plusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfWeek, endOfWeek);
+            LocalDateTime startOfWeek = now.minusDays(now.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
+            LocalDateTime endOfWeek = startOfWeek.plusDays(6).toLocalDate().atTime(23, 59, 59);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCreatedAtBetween(startOfWeek, endOfWeek);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -678,9 +640,9 @@ public class PaymentDetailController {
     public ResponseEntity<List<PaymentDetail>> getPaymentDetailsThisMonth() {
         try {
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfMonth, endOfMonth);
+            LocalDateTime startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23, 59, 59);
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByCreatedAtBetween(startOfMonth, endOfMonth);
             if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -694,14 +656,10 @@ public class PaymentDetailController {
     @GetMapping("/total-amount/today")
     public ResponseEntity<BigDecimal> getTotalAmountToday() {
         try {
-            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfDay, endOfDay);
-            BigDecimal totalAmount = paymentDetails.stream()
-                    .map(PaymentDetail::getAmount)
-                    .filter(amount -> amount != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            return new ResponseEntity<>(totalAmount, HttpStatus.OK);
+            LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+            BigDecimal totalAmount = paymentDetailRepository.getTotalAmountByDateRange(startOfDay, endOfDay);
+            return new ResponseEntity<>(totalAmount != null ? totalAmount : BigDecimal.ZERO, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -712,91 +670,114 @@ public class PaymentDetailController {
     public ResponseEntity<BigDecimal> getTotalAmountThisMonth() {
         try {
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfMonth, endOfMonth);
-            BigDecimal totalAmount = paymentDetails.stream()
-                    .map(PaymentDetail::getAmount)
-                    .filter(amount -> amount != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            return new ResponseEntity<>(totalAmount, HttpStatus.OK);
+            LocalDateTime startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23, 59, 59);
+            BigDecimal totalAmount = paymentDetailRepository.getTotalAmountByDateRange(startOfMonth, endOfMonth);
+            return new ResponseEntity<>(totalAmount != null ? totalAmount : BigDecimal.ZERO, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // GET - Get total processing fees collected today
-    @GetMapping("/total-processing-fee/today")
-    public ResponseEntity<BigDecimal> getTotalProcessingFeeToday() {
+    // GET - Get payment detail statistics
+    @GetMapping("/statistics")
+    public ResponseEntity<PaymentDetailStatisticsDTO> getPaymentDetailStatistics() {
         try {
-            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfDay, endOfDay);
-            BigDecimal totalProcessingFee = paymentDetails.stream()
-                    .map(PaymentDetail::getProcessingFee)
-                    .filter(fee -> fee != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            return new ResponseEntity<>(totalProcessingFee, HttpStatus.OK);
+            PaymentDetailStatisticsDTO stats = paymentDetailService.getPaymentDetailStatistics();
+            return new ResponseEntity<>(stats, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // GET - Get total processing fees collected this month
-    @GetMapping("/total-processing-fee/this-month")
-    public ResponseEntity<BigDecimal> getTotalProcessingFeeThisMonth() {
+    // GET - Get payment details by payment method breakdown
+    @GetMapping("/breakdown/method")
+    public ResponseEntity<List<PaymentMethodBreakdownDTO>> getPaymentMethodBreakdown() {
         try {
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByPaymentDateBetween(startOfMonth, endOfMonth);
-            BigDecimal totalProcessingFee = paymentDetails.stream()
-                    .map(PaymentDetail::getProcessingFee)
-                    .filter(fee -> fee != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            return new ResponseEntity<>(totalProcessingFee, HttpStatus.OK);
+            List<PaymentMethodBreakdownDTO> breakdown = paymentDetailService.getPaymentMethodBreakdown();
+            return new ResponseEntity<>(breakdown, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // GET - Get payment details summary by payment method
-    @GetMapping("/summary/payment-method")
-    public ResponseEntity<List<Object[]>> getPaymentDetailsSummaryByMethod() {
+    // POST - Create payment detail with bank details
+    @PostMapping("/bank-payment")
+    public ResponseEntity<PaymentDetail> createBankPaymentDetail(@RequestBody CreateBankPaymentRequest request) {
         try {
-            // This would typically be implemented with a custom query
-            // For now, returning a simple response
-            return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+            PaymentDetail paymentDetail = paymentDetailService.createBankPaymentDetail(request);
+            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // GET - Get recent payment details (last 10)
-    @GetMapping("/recent")
-    public ResponseEntity<List<PaymentDetail>> getRecentPaymentDetails() {
+    // POST - Create payment detail with card details
+    @PostMapping("/card-payment")
+    public ResponseEntity<PaymentDetail> createCardPaymentDetail(@RequestBody CreateCardPaymentRequest request) {
         try {
-            List<PaymentDetail> allPaymentDetails = paymentDetailRepository.findAll();
-            List<PaymentDetail> recentPaymentDetails = allPaymentDetails.stream()
-                    .sorted((pd1, pd2) -> {
-                        if (pd1.getPaymentDate() == null && pd2.getPaymentDate() == null) {
-                            return 0;
-                        }
-                        if (pd1.getPaymentDate() == null) {
-                            return 1;
-                        }
-                        if (pd2.getPaymentDate() == null) {
-                            return -1;
-                        }
-                        return pd2.getPaymentDate().compareTo(pd1.getPaymentDate());
-                    })
-                    .limit(10)
-                    .toList();
+            PaymentDetail paymentDetail = paymentDetailService.createCardPaymentDetail(request);
+            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-            if (recentPaymentDetails.isEmpty()) {
+    // POST - Create payment detail with check details
+    @PostMapping("/check-payment")
+    public ResponseEntity<PaymentDetail> createCheckPaymentDetail(@RequestBody CreateCheckPaymentRequest request) {
+        try {
+            PaymentDetail paymentDetail = paymentDetailService.createCheckPaymentDetail(request);
+            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // PATCH - Bulk update payment detail status
+    @PatchMapping("/bulk-update-status")
+    public ResponseEntity<List<PaymentDetail>> bulkUpdatePaymentDetailStatus(
+            @RequestParam("ids") List<Long> ids,
+            @RequestParam("status") PaymentStatus status) {
+        try {
+            List<PaymentDetail> updatedPaymentDetails = paymentDetailService.bulkUpdateStatus(ids, status);
+            return new ResponseEntity<>(updatedPaymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // GET - Get failed payment details for retry
+    @GetMapping("/failed-for-retry")
+    public ResponseEntity<List<PaymentDetail>> getFailedPaymentDetailsForRetry() {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByStatus(PaymentStatus.FAILED);
+            if (paymentDetails.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(recentPaymentDetails, HttpStatus.OK);
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // POST - Retry failed payment detail
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<PaymentDetail> retryPaymentDetail(@PathVariable("id") Long id) {
+        try {
+            PaymentDetail retryResult = paymentDetailService.retryPaymentDetail(id);
+            return new ResponseEntity<>(retryResult, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // GET - Get payment details audit trail
+    @GetMapping("/{id}/audit-trail")
+    public ResponseEntity<List<PaymentDetailAuditDTO>> getPaymentDetailAuditTrail(@PathVariable("id") Long id) {
+        try {
+            List<PaymentDetailAuditDTO> auditTrail = paymentDetailService.getPaymentDetailAuditTrail(id);
+            return new ResponseEntity<>(auditTrail, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }

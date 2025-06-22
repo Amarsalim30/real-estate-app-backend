@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

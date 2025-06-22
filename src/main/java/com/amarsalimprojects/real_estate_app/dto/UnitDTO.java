@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.model.Unit;
-import com.amarsalimprojects.real_estate_app.model.enums.ConstructionStage;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
 
 public class UnitDTO {
 

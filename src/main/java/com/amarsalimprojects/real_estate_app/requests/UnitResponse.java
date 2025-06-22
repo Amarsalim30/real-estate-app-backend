@@ -3,8 +3,8 @@ package com.amarsalimprojects.real_estate_app.requests;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

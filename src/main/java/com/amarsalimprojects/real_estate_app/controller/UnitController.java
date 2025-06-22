@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amarsalimprojects.real_estate_app.dto.UnitDTO;
+import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.model.Unit;
-import com.amarsalimprojects.real_estate_app.model.enums.ConstructionStage;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 import com.amarsalimprojects.real_estate_app.service.UnitService;
 

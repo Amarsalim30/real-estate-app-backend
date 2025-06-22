@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.amarsalimprojects.real_estate_app.model.enums.ProjectStatus;
+import com.amarsalimprojects.real_estate_app.enums.ProjectStatus;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;

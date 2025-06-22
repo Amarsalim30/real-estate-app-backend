@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.model.Invoice;
-import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {

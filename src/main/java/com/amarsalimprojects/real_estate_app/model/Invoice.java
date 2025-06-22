@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
+import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

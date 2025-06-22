@@ -2,7 +2,7 @@ package com.amarsalimprojects.real_estate_app.model;
 
 import java.time.LocalDateTime;
 
-import com.amarsalimprojects.real_estate_app.model.enums.UserRole;
+import com.amarsalimprojects.real_estate_app.enums.UserRole;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;

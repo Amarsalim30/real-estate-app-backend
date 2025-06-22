@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.model.enums;
+package com.amarsalimprojects.real_estate_app.enums;
 
 public enum PaymentStatus {
     PENDING,

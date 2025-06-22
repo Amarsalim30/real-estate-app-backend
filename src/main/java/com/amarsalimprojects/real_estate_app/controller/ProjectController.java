@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amarsalimprojects.real_estate_app.enums.ProjectStatus;
 import com.amarsalimprojects.real_estate_app.model.Project;
-import com.amarsalimprojects.real_estate_app.model.enums.ProjectStatus;
 import com.amarsalimprojects.real_estate_app.repository.ProjectRepository;
 
 @RestController

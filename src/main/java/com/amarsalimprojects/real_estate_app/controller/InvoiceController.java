@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.model.Invoice;
-import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
 
 @RestController

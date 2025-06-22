@@ -9,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.model.BuyerProfile;
 import com.amarsalimprojects.real_estate_app.model.Unit;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 
