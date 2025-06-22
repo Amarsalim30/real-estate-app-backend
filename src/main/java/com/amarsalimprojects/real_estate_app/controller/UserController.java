@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amarsalimprojects.real_estate_app.model.UserManagement.User;
+import com.amarsalimprojects.real_estate_app.model.User;
 import com.amarsalimprojects.real_estate_app.model.enums.UserRole;
 import com.amarsalimprojects.real_estate_app.repository.UserRepository;
 import com.amarsalimprojects.real_estate_app.requests.LoginRequest;

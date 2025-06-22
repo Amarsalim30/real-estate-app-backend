@@ -1,17 +1,16 @@
-package com.amarsalimprojects.real_estate_app.model.UserManagement;
+package com.amarsalimprojects.real_estate_app.model;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
@@ -30,38 +29,38 @@ public class BuyerProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String firstName;
-    private String lastName;
     private String email;
     private String phone;
-
     private String address;
-    private String city;
-    private String state;
-    private String zipCode;
+    private String County;
 
-    private String occupation;
-    private BigDecimal annualIncome;
-    private Integer creditScore;
-    private String preferredContactMethod;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
+    private String nationalId;
+    private String kraPin;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Relationships
+    // FK to User (1:1)
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    private User user;
+
+    // 1:* relationship with Units
     @Builder.Default
-    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "buyer")
+    private List<Unit> purchasedUnits = new ArrayList<>();
+
+    // Related entities (for business operations)
+    @Builder.Default
+    @OneToMany(mappedBy = "buyer")
     private List<Invoice> invoices = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "buyer")
     private List<Payment> payments = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "buyer")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     @PreUpdate
@@ -73,5 +72,4 @@ public class BuyerProfile {
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
     }
-
 }
