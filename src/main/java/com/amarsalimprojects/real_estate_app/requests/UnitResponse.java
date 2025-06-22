@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.dto;
+package com.amarsalimprojects.real_estate_app.requests;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.model;
+package com.amarsalimprojects.real_estate_app.model.UserManagement;
 
 import java.time.LocalDateTime;
 

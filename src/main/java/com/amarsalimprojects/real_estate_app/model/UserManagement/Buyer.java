@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.model;
+package com.amarsalimprojects.real_estate_app.model.UserManagement;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Buyer {
+public class BuyerProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

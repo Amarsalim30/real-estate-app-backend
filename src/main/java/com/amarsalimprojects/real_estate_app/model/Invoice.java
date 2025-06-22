@@ -1,5 +1,6 @@
 package com.amarsalimprojects.real_estate_app.model;
 
+import com.amarsalimprojects.real_estate_app.model.UserManagement.Buyer;
 import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
 
 import java.math.BigDecimal;

@@ -116,7 +116,7 @@ public class Project {
 //     TOWNHOUSE,
 //     COMMERCIAL,
 //     LAND
-// }
+// }`
 @Embeddable
 @Data
 @NoArgsConstructor

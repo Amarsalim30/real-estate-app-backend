@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.amarsalimprojects.real_estate_app.model.User;
+import com.amarsalimprojects.real_estate_app.model.UserManagement.User;
 import com.amarsalimprojects.real_estate_app.model.enums.UserRole;
 
 @Repository

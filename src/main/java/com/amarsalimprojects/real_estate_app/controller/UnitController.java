@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amarsalimprojects.real_estate_app.dto.UnitDTO;
 import com.amarsalimprojects.real_estate_app.model.Unit;
 import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
 import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
@@ -59,15 +61,20 @@ public class UnitController {
         }
     }
 
-    // READ - Get all units
-    @GetMapping
-    public ResponseEntity<List<Unit>> getAllUnits() {
+    // READ - Get all units as DTOs
+    @GetMapping("/all")
+    public ResponseEntity<List<UnitDTO>> getAllUnits() {
         try {
             List<Unit> units = unitRepository.findAll();
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+
+            List<UnitDTO> unitDTOs = units.stream()
+                    .map(unit -> new UnitDTO(unit))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(unitDTOs, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }

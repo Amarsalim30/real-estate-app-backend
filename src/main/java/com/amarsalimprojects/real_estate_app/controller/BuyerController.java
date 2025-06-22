@@ -1,6 +1,6 @@
 package com.amarsalimprojects.real_estate_app.controller;
 
-import com.amarsalimprojects.real_estate_app.model.Buyer;
+import com.amarsalimprojects.real_estate_app.model.UserManagement.Buyer;
 import com.amarsalimprojects.real_estate_app.repository.BuyerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

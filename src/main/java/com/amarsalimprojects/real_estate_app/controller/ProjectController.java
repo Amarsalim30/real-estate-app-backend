@@ -21,11 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amarsalimprojects.real_estate_app.dto.ProjectDTO;
 import com.amarsalimprojects.real_estate_app.model.Project;
 import com.amarsalimprojects.real_estate_app.model.enums.ProjectStatus;
 import com.amarsalimprojects.real_estate_app.repository.ProjectRepository;
-import com.amarsalimprojects.real_estate_app.service.ProjectService;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -34,8 +32,6 @@ public class ProjectController {
 
     @Autowired
     private ProjectRepository projectRepository;
-
-    private ProjectService projectService;
 
     // CREATE - Add a new project
     @PostMapping
@@ -58,9 +54,16 @@ public class ProjectController {
 
     // READ - Get all projects
     @GetMapping
-    public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        List<ProjectDTO> projects = projectService.getAllProjects();
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<List<Project>> getAllProjects() {
+        try {
+            List<Project> projects = projectRepository.findAll();
+            if (projects.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(projects, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // READ - Get project by ID

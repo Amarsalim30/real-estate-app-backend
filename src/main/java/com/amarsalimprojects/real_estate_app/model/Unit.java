@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.amarsalimprojects.real_estate_app.model.UserManagement.Buyer;
 import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
 import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
 

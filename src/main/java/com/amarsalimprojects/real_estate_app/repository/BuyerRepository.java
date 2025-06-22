@@ -1,8 +1,9 @@
 package com.amarsalimprojects.real_estate_app.repository;
 
-import com.amarsalimprojects.real_estate_app.model.Buyer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.amarsalimprojects.real_estate_app.model.UserManagement.Buyer;
 
 import java.util.List;
 import java.util.Optional;
