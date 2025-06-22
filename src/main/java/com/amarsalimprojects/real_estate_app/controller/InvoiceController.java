@@ -1,18 +1,29 @@
 package com.amarsalimprojects.real_estate_app.controller;
 
-import com.amarsalimprojects.real_estate_app.model.Invoice;
-import com.amarsalimprojects.real_estate_app.model.enums.InvoiceStatus;
-import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
+import com.amarsalimprojects.real_estate_app.model.Invoice;
+import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
 
 @RestController
 @RequestMapping("/api/invoices")
@@ -26,12 +37,14 @@ public class InvoiceController {
     @PostMapping
     public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoice) {
         try {
-            // Check if invoice number already exists
-            if (invoice.getInvoiceNumber() != null) {
-                Optional<Invoice> existingInvoice = invoiceRepository.findByInvoiceNumber(invoice.getInvoiceNumber());
-                if (existingInvoice.isPresent()) {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-                }
+            // Set issued date if not provided
+            if (invoice.getIssuedDate() == null) {
+                invoice.setIssuedDate(LocalDate.now());
+            }
+
+            // Set default status if not provided
+            if (invoice.getStatus() == null) {
+                invoice.setStatus(InvoiceStatus.PENDING);
             }
 
             Invoice savedInvoice = invoiceRepository.save(invoice);
@@ -70,21 +83,6 @@ public class InvoiceController {
         }
     }
 
-    // READ - Get invoice by invoice number
-    @GetMapping("/number/{invoiceNumber}")
-    public ResponseEntity<Invoice> getInvoiceByNumber(@PathVariable("invoiceNumber") String invoiceNumber) {
-        try {
-            Optional<Invoice> invoice = invoiceRepository.findByInvoiceNumber(invoiceNumber);
-            if (invoice.isPresent()) {
-                return new ResponseEntity<>(invoice.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // READ - Get invoices by status
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Invoice>> getInvoicesByStatus(@PathVariable("status") InvoiceStatus status) {
@@ -113,71 +111,28 @@ public class InvoiceController {
         }
     }
 
-    // READ - Get invoices by unit ID
+    // READ - Get invoice by unit ID
     @GetMapping("/unit/{unitId}")
-    public ResponseEntity<List<Invoice>> getInvoicesByUnitId(@PathVariable("unitId") Long unitId) {
+    public ResponseEntity<Invoice> getInvoiceByUnitId(@PathVariable("unitId") Long unitId) {
         try {
-            List<Invoice> invoices = invoiceRepository.findByUnitId(unitId);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            Optional<Invoice> invoice = invoiceRepository.findByUnitId(unitId);
+            if (invoice.isPresent()) {
+                return new ResponseEntity<>(invoice.get(), HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // READ - Get invoices by project ID
-    @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<Invoice>> getInvoicesByProjectId(@PathVariable("projectId") Long projectId) {
-        try {
-            List<Invoice> invoices = invoiceRepository.findByProjectId(projectId);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get invoices by issue date range
-    @GetMapping("/issue-date")
-    public ResponseEntity<List<Invoice>> getInvoicesByIssueDateRange(
+    // READ - Get invoices by issued date range
+    @GetMapping("/issued-date-range")
+    public ResponseEntity<List<Invoice>> getInvoicesByIssuedDateRange(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         try {
-            List<Invoice> invoices = invoiceRepository.findByIssueDateBetween(startDate, endDate);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get invoices by due date range
-    @GetMapping("/due-date")
-    public ResponseEntity<List<Invoice>> getInvoicesByDueDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<Invoice> invoices = invoiceRepository.findByDueDateBetween(startDate, endDate);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get overdue invoices
-    @GetMapping("/overdue")
-    public ResponseEntity<List<Invoice>> getOverdueInvoices() {
-        try {
-            List<Invoice> invoices = invoiceRepository.findOverdueInvoices(LocalDate.now(), InvoiceStatus.PENDING);
+            List<Invoice> invoices = invoiceRepository.findByIssuedDateBetween(startDate, endDate);
             if (invoices.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -222,21 +177,12 @@ public class InvoiceController {
             if (existingInvoice.isPresent()) {
                 Invoice invoiceToUpdate = existingInvoice.get();
 
-                // Update fields
-                invoiceToUpdate.setInvoiceNumber(invoice.getInvoiceNumber());
+                // Update fields that exist in the model
+                invoiceToUpdate.setStatus(invoice.getStatus());
+                invoiceToUpdate.setTotalAmount(invoice.getTotalAmount());
+                invoiceToUpdate.setIssuedDate(invoice.getIssuedDate());
                 invoiceToUpdate.setUnit(invoice.getUnit());
                 invoiceToUpdate.setBuyer(invoice.getBuyer());
-                invoiceToUpdate.setProject(invoice.getProject());
-                invoiceToUpdate.setIssueDate(invoice.getIssueDate());
-                invoiceToUpdate.setDueDate(invoice.getDueDate());
-                invoiceToUpdate.setPaidDate(invoice.getPaidDate());
-                invoiceToUpdate.setStatus(invoice.getStatus());
-                invoiceToUpdate.setSubtotal(invoice.getSubtotal());
-                invoiceToUpdate.setTaxAmount(invoice.getTaxAmount());
-                invoiceToUpdate.setTotalAmount(invoice.getTotalAmount());
-                invoiceToUpdate.setDescription(invoice.getDescription());
-                invoiceToUpdate.setPaymentTerms(invoice.getPaymentTerms());
-                invoiceToUpdate.setNotes(invoice.getNotes());
 
                 Invoice updatedInvoice = invoiceRepository.save(invoiceToUpdate);
                 return new ResponseEntity<>(updatedInvoice, HttpStatus.OK);
@@ -257,47 +203,20 @@ public class InvoiceController {
                 Invoice invoiceToUpdate = existingInvoice.get();
 
                 // Update only non-null fields
-                if (invoice.getInvoiceNumber() != null) {
-                    invoiceToUpdate.setInvoiceNumber(invoice.getInvoiceNumber());
+                if (invoice.getStatus() != null) {
+                    invoiceToUpdate.setStatus(invoice.getStatus());
+                }
+                if (invoice.getTotalAmount() != null) {
+                    invoiceToUpdate.setTotalAmount(invoice.getTotalAmount());
+                }
+                if (invoice.getIssuedDate() != null) {
+                    invoiceToUpdate.setIssuedDate(invoice.getIssuedDate());
                 }
                 if (invoice.getUnit() != null) {
                     invoiceToUpdate.setUnit(invoice.getUnit());
                 }
                 if (invoice.getBuyer() != null) {
                     invoiceToUpdate.setBuyer(invoice.getBuyer());
-                }
-                if (invoice.getProject() != null) {
-                    invoiceToUpdate.setProject(invoice.getProject());
-                }
-                if (invoice.getIssueDate() != null) {
-                    invoiceToUpdate.setIssueDate(invoice.getIssueDate());
-                }
-                if (invoice.getDueDate() != null) {
-                    invoiceToUpdate.setDueDate(invoice.getDueDate());
-                }
-                if (invoice.getPaidDate() != null) {
-                    invoiceToUpdate.setPaidDate(invoice.getPaidDate());
-                }
-                if (invoice.getStatus() != null) {
-                    invoiceToUpdate.setStatus(invoice.getStatus());
-                }
-                if (invoice.getSubtotal() != null) {
-                    invoiceToUpdate.setSubtotal(invoice.getSubtotal());
-                }
-                if (invoice.getTaxAmount() != null) {
-                    invoiceToUpdate.setTaxAmount(invoice.getTaxAmount());
-                }
-                if (invoice.getTotalAmount() != null) {
-                    invoiceToUpdate.setTotalAmount(invoice.getTotalAmount());
-                }
-                if (invoice.getDescription() != null) {
-                    invoiceToUpdate.setDescription(invoice.getDescription());
-                }
-                if (invoice.getPaymentTerms() != null) {
-                    invoiceToUpdate.setPaymentTerms(invoice.getPaymentTerms());
-                }
-                if (invoice.getNotes() != null) {
-                    invoiceToUpdate.setNotes(invoice.getNotes());
                 }
 
                 Invoice updatedInvoice = invoiceRepository.save(invoiceToUpdate);
@@ -319,11 +238,6 @@ public class InvoiceController {
                 Invoice invoiceToUpdate = existingInvoice.get();
                 invoiceToUpdate.setStatus(status);
 
-                // Set paid date if status is PAID
-                if (status == InvoiceStatus.PAID && invoiceToUpdate.getPaidDate() == null) {
-                    invoiceToUpdate.setPaidDate(LocalDate.now());
-                }
-
                 Invoice updatedInvoice = invoiceRepository.save(invoiceToUpdate);
                 return new ResponseEntity<>(updatedInvoice, HttpStatus.OK);
             } else {
@@ -342,7 +256,6 @@ public class InvoiceController {
             if (existingInvoice.isPresent()) {
                 Invoice invoiceToUpdate = existingInvoice.get();
                 invoiceToUpdate.setStatus(InvoiceStatus.PAID);
-                invoiceToUpdate.setPaidDate(LocalDate.now());
 
                 Invoice updatedInvoice = invoiceRepository.save(invoiceToUpdate);
                 return new ResponseEntity<>(updatedInvoice, HttpStatus.OK);
@@ -370,17 +283,6 @@ public class InvoiceController {
         }
     }
 
-    // DELETE - Delete all invoices
-    @DeleteMapping
-    public ResponseEntity<HttpStatus> deleteAllInvoices() {
-        try {
-            invoiceRepository.deleteAll();
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // DELETE - Delete invoices by status
     @DeleteMapping("/status/{status}")
     public ResponseEntity<HttpStatus> deleteInvoicesByStatus(@PathVariable("status") InvoiceStatus status) {
@@ -397,8 +299,7 @@ public class InvoiceController {
         }
     }
 
-    // Additional utility endpoints
-    // GET - Get invoice count
+    // Utility endpoint - Get invoice count
     @GetMapping("/count")
     public ResponseEntity<Long> getInvoiceCount() {
         try {
@@ -420,51 +321,62 @@ public class InvoiceController {
         }
     }
 
-    // GET - Get invoices due today
-    @GetMapping("/due-today")
-    public ResponseEntity<List<Invoice>> getInvoicesDueToday() {
-        try {
-            LocalDate today = LocalDate.now();
-            List<Invoice> invoices = invoiceRepository.findByDueDateBetween(today, today);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    /*
+    // GET - Get invoice with payment details
+@GetMapping("/{id}/with-payments")
+public ResponseEntity<InvoiceWithPaymentsDTO> getInvoiceWithPayments(@PathVariable Long id) {
+    Optional<Invoice> invoice = invoiceRepository.findById(id);
+    if (invoice.isPresent()) {
+        InvoiceWithPaymentsDTO dto = mapToInvoiceWithPaymentsDTO(invoice.get());
+        return ResponseEntity.ok(dto);
     }
+    return ResponseEntity.notFound().build();
+}
 
-    // GET - Get invoices due this week
-    @GetMapping("/due-this-week")
-    public ResponseEntity<List<Invoice>> getInvoicesDueThisWeek() {
-        try {
-            LocalDate today = LocalDate.now();
-            LocalDate endOfWeek = today.plusDays(7);
-            List<Invoice> invoices = invoiceRepository.findByDueDateBetween(today, endOfWeek);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+// GET - Get invoices summary/dashboard
+@GetMapping("/summary")
+public ResponseEntity<InvoiceSummaryDTO> getInvoicesSummary() {
+    InvoiceSummaryDTO summary = InvoiceSummaryDTO.builder()
+        .totalInvoices(invoiceRepository.count())
+        .pendingCount(invoiceRepository.countByStatus(InvoiceStatus.PENDING))
+        .paidCount(invoiceRepository.countByStatus(InvoiceStatus.PAID))
+        .overdueCount(invoiceRepository.countByStatus(InvoiceStatus.OVERDUE))
+        .totalAmount(invoiceRepository.getTotalAmountByStatus(null)) // All statuses
+        .pendingAmount(invoiceRepository.getTotalAmountByStatus(InvoiceStatus.PENDING))
+        .paidAmount(invoiceRepository.getTotalAmountByStatus(InvoiceStatus.PAID))
+        .build();
+    
+    return ResponseEntity.ok(summary);
+}
 
-    // GET - Get invoices due this month
-    @GetMapping("/due-this-month")
-    public ResponseEntity<List<Invoice>> getInvoicesDueThisMonth() {
-        try {
-            LocalDate today = LocalDate.now();
-            LocalDate startOfMonth = today.withDayOfMonth(1);
-            LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
-            List<Invoice> invoices = invoiceRepository.findByDueDateBetween(startOfMonth, endOfMonth);
-            if (invoices.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(invoices, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+// GET - Get recent invoices
+@GetMapping("/recent")
+public ResponseEntity<List<Invoice>> getRecentInvoices(@RequestParam(defaultValue = "30") int days) {
+    LocalDate cutoffDate = LocalDate.now().minusDays(days);
+    List<Invoice> invoices = invoiceRepository.findByIssuedDateAfter(cutoffDate);
+    return ResponseEntity.ok(invoices);
+}
+
+// GET - Get high-value invoices
+@GetMapping("/high-value")
+public ResponseEntity<List<Invoice>> getHighValueInvoices(@RequestParam BigDecimal threshold) {
+    List<Invoice> invoices = invoiceRepository.findByTotalAmountGreaterThan(threshold);
+    return ResponseEntity.ok(invoices);
+}
+
+// PATCH - Process payment for invoice
+@PatchMapping("/{id}/process-payment")
+public ResponseEntity<Invoice> processPayment(
+    @PathVariable Long id, 
+    @RequestParam BigDecimal amount) {
+    try {
+        invoiceService.processPayment(id, amount);
+        Invoice updatedInvoice = invoiceRepository.findById(id).get();
+        return ResponseEntity.ok(updatedInvoice);
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().build();
     }
+}
+
+     */
 }

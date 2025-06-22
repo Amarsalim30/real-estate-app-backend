@@ -1,37 +1,29 @@
 package com.amarsalimprojects.real_estate_app.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import com.amarsalimprojects.real_estate_app.model.enums.ProjectStatus;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.amarsalimprojects.real_estate_app.enums.ProjectStatus;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "projects")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -44,57 +36,53 @@ public class Project {
 
     private String name;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
-    private String location;
     private String address;
-    private String city;
-    private String state;
-    private String zipCode;
+    private String county;
+    private String subCounty;
 
-    private Integer totalUnits;
-    private Integer availableUnits;
-    private Integer reservedUnits;
-    private Integer soldUnits;
-
-    private Integer constructionProgress;
-
+// private Double latitude;
+// private Double longitude;
     @Enumerated(EnumType.STRING)
     private ProjectStatus status;
 
-    private LocalDate startDate;
-    private LocalDate expectedCompletion;
-    private String developer;
+    //construction management
+    private String developerName;
+    private float constructionProgress;
+    private LocalDateTime startDate;
+    private LocalDateTime targetCompletionDate;
+    private LocalDateTime completionDate;
+    // Add this to support admin control of completion
+    private boolean adminSignedOff;
 
+    //selling points
+    private BigDecimal minPrice;
+    private BigDecimal maxPrice;
     @ElementCollection
     private List<String> images;
-    @ElementCollection
-    private List<String> amenities;
-    @Embedded
-    private PriceRange priceRange;
 
+    @ElementCollection
+    private Set<String> amenities;
+
+    //selling Projects as a whole e.g mansion big money
+    // FK to BuyerProfile (1:* from BuyerProfile perspective)
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "buyer_id")
+    // private BuyerProfile buyer;
+    // // 1:1 relationship with Invoice
+    // @OneToOne(mappedBy = "unit")
+    // private Invoice invoice;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // 1:* relationship with Units
     @Builder.Default
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @OneToMany(mappedBy = "project")
     private List<Unit> units = new ArrayList<>();
 
-    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Invoice> invoices;
-
-    // Add Units to Project and set Project to Unit
-    public void addUnit(Unit unit) {
-        if (!this.units.contains(unit)) {
-            unit.setProject(this);
-            this.units.add(unit);
-        }
-    }
-
-    public void removeUnit(Unit unit) {
-        units.remove(unit);
-        unit.setProject(null);
+    // Returns 100 if adminSignedOff is true
+    public float getDisplayableProgress() {
+        return adminSignedOff ? 100f : constructionProgress;
     }
 
     @PreUpdate
@@ -106,23 +94,4 @@ public class Project {
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
     }
-
-}
-
-// public enum ProjectType {
-//     HOUSE,
-//     APARTMENT,
-//     CONDO,
-//     TOWNHOUSE,
-//     COMMERCIAL,
-//     LAND
-// }
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class PriceRange {
-
-    private BigDecimal min;
-    private BigDecimal max;
 }

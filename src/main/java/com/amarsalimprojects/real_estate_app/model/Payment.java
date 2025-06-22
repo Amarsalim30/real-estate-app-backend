@@ -1,11 +1,12 @@
 package com.amarsalimprojects.real_estate_app.model;
 
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
-
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,13 +17,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import jakarta.persistence.Table;
-
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -37,30 +38,31 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod method;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // FK to Invoice
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id", nullable = false)
-    private Unit unit;
-
+    // FK to BuyerProfile
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    private Buyer buyer;
+    private BuyerProfile buyer;
 
-    private BigDecimal amount;
-    private LocalDate paymentDate;
-
-    @Enumerated(EnumType.STRING)
-    private PaymentMethod paymentMethod;
-
-    private String transactionId;
-    @Enumerated(EnumType.STRING)
-    private PaymentStatus status;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // 1:* relationship with PaymentDetails
+    @Builder.Default
+    @OneToMany(mappedBy = "payment")
+    private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     @PreUpdate
     protected void onUpdate() {
@@ -71,5 +73,4 @@ public class Payment {
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
     }
-
 }

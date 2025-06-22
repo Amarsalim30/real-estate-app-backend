@@ -3,8 +3,8 @@ package com.amarsalimprojects.real_estate_app.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
@@ -37,30 +37,36 @@ public class PaymentDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String paymentNumber;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_id", nullable = false)
-    private Buyer buyer;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invoice_id")
-    private Invoice invoice;
 
     private BigDecimal amount;
-    private BigDecimal processingFee;
-    @Enumerated(EnumType.STRING)
-    private PaymentMethod paymentMethod;
 
-    private LocalDateTime paymentDate;
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod method;
+
     private String transactionId;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
-    private String notes;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
+    // FK to BuyerProfile
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private BuyerProfile buyer;
+
+    // FK to Invoice
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id", nullable = false)
+    private Invoice invoice;
+
+    // FK to Payment
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id", nullable = false)
+    private Payment payment;
+
+    // Embedded payment method details
     @Embedded
     @AttributeOverrides({
         @AttributeOverride(name = "bankName", column = @Column(name = "bank_details_bank_name")),
@@ -86,9 +92,6 @@ public class PaymentDetail {
     })
     private CheckDetails checkDetails;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
@@ -98,9 +101,9 @@ public class PaymentDetail {
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
     }
-
 }
 
+// Embedded classes for payment method metadata
 @Embeddable
 @Data
 @NoArgsConstructor

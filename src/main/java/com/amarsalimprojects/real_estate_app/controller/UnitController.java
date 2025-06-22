@@ -1,12 +1,11 @@
 package com.amarsalimprojects.real_estate_app.controller;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -21,12 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amarsalimprojects.real_estate_app.dto.UnitDTO;
+import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.model.Unit;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
-import com.amarsalimprojects.real_estate_app.requests.UnitRequest;
-import com.amarsalimprojects.real_estate_app.requests.UnitStatistics;
 import com.amarsalimprojects.real_estate_app.service.UnitService;
 
 @RestController
@@ -42,26 +41,53 @@ public class UnitController {
 
     // CREATE - Add a new unit
     @PostMapping
-    public ResponseEntity<Unit> createUnit(@RequestBody UnitRequest request) {
+    public ResponseEntity<Unit> createUnit(@RequestBody Unit unit) {
         try {
             // Check if unit number already exists
-            if (request.getUnitNumber() != null && !request.getUnitNumber().isEmpty()) {
-                Optional<Unit> existingUnit = unitRepository.findByUnitNumber(request.getUnitNumber());
+            if (unit.getUnitNumber() != null && !unit.getUnitNumber().isEmpty()) {
+                Optional<Unit> existingUnit = unitRepository.findByUnitNumber(unit.getUnitNumber());
                 if (existingUnit.isPresent()) {
                     return new ResponseEntity<>(null, HttpStatus.CONFLICT);
                 }
             }
 
-            Unit savedUnit = unitService.createUnit(request);
+            // Set default values if not provided
+            if (unit.getStatus() == null) {
+                unit.setStatus(UnitStatus.AVAILABLE);
+            }
+            if (unit.getCurrentStage() == null) {
+                unit.setCurrentStage(ConstructionStage.PLANNING);
+            }
+
+            Unit savedUnit = unitRepository.save(unit);
             return new ResponseEntity<>(savedUnit, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // READ - Get all units
+    // READ - Get all units as DTOs
+    @GetMapping("/all")
+    public ResponseEntity<List<UnitDTO>> getAllUnits() {
+        try {
+            List<Unit> units = unitRepository.findAll();
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            List<UnitDTO> unitDTOs = units.stream()
+                    .map(unit -> new UnitDTO(unit))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(unitDTOs, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // READ - Get all units (raw entities)
     @GetMapping
-    public ResponseEntity<List<Unit>> getAllUnits() {
+    public ResponseEntity<List<Unit>> getAllUnitsRaw() {
         try {
             List<Unit> units = unitRepository.findAll();
             if (units.isEmpty()) {
@@ -173,52 +199,6 @@ public class UnitController {
         }
     }
 
-    // READ - Get units by bathrooms
-    @GetMapping("/bathrooms/{bathrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByBathrooms(@PathVariable("bathrooms") Integer bathrooms) {
-        try {
-            List<Unit> units = unitRepository.findByBathrooms(bathrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by bedrooms and bathrooms
-    @GetMapping("/bedrooms/{bedrooms}/bathrooms/{bathrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByBedroomsAndBathrooms(
-            @PathVariable("bedrooms") Integer bedrooms,
-            @PathVariable("bathrooms") Integer bathrooms) {
-        try {
-            List<Unit> units = unitRepository.findByBedroomsAndBathrooms(bedrooms, bathrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by sqft range
-    @GetMapping("/sqft-range")
-    public ResponseEntity<List<Unit>> getUnitsBySqftRange(
-            @RequestParam("minSqft") Integer minSqft,
-            @RequestParam("maxSqft") Integer maxSqft) {
-        try {
-            List<Unit> units = unitRepository.findBySqftBetween(minSqft, maxSqft);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // READ - Get units by price range
     @GetMapping("/price-range")
     public ResponseEntity<List<Unit>> getUnitsByPriceRange(
@@ -235,11 +215,11 @@ public class UnitController {
         }
     }
 
-    // READ - Get units by minimum price
-    @GetMapping("/min-price/{minPrice}")
-    public ResponseEntity<List<Unit>> getUnitsByMinPrice(@PathVariable("minPrice") BigDecimal minPrice) {
+    // READ - Get units by buyer ID
+    @GetMapping("/buyer/{buyerId}")
+    public ResponseEntity<List<Unit>> getUnitsByBuyerId(@PathVariable("buyerId") Long buyerId) {
         try {
-            List<Unit> units = unitRepository.findByPriceGreaterThanEqual(minPrice);
+            List<Unit> units = unitRepository.findByBuyerId(buyerId);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -249,11 +229,11 @@ public class UnitController {
         }
     }
 
-    // READ - Get units by maximum price
-    @GetMapping("/max-price/{maxPrice}")
-    public ResponseEntity<List<Unit>> getUnitsByMaxPrice(@PathVariable("maxPrice") BigDecimal maxPrice) {
+    // READ - Get featured units
+    @GetMapping("/featured")
+    public ResponseEntity<List<Unit>> getFeaturedUnits() {
         try {
-            List<Unit> units = unitRepository.findByPriceLessThanEqual(maxPrice);
+            List<Unit> units = unitRepository.findByIsFeaturedTrue();
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -263,586 +243,32 @@ public class UnitController {
         }
     }
 
-    // READ - Get units by project and status
-    @GetMapping("/project/{projectId}/status/{status}")
-    public ResponseEntity<List<Unit>> getUnitsByProjectAndStatus(
-            @PathVariable("projectId") Long projectId,
-            @PathVariable("status") UnitStatus status) {
-        try {
-            List<Unit> units = unitRepository.findByProjectIdAndStatus(projectId, status);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by project and type
-    @GetMapping("/project/{projectId}/type/{type}")
-    public ResponseEntity<List<Unit>> getUnitsByProjectAndType(
-            @PathVariable("projectId") Long projectId,
-            @PathVariable("type") UnitType type) {
-        try {
-            List<Unit> units = unitRepository.findByProjectIdAndType(projectId, type);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by project and floor
-    @GetMapping("/project/{projectId}/floor/{floor}")
-    public ResponseEntity<List<Unit>> getUnitsByProjectAndFloor(
-            @PathVariable("projectId") Long projectId,
-            @PathVariable("floor") Integer floor) {
-        try {
-            List<Unit> units = unitRepository.findByProjectIdAndFloor(projectId, floor);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by status and type
-    @GetMapping("/status/{status}/type/{type}")
-    public ResponseEntity<List<Unit>> getUnitsByStatusAndType(
-            @PathVariable("status") UnitStatus status,
-            @PathVariable("type") UnitType type) {
-        try {
-            List<Unit> units = unitRepository.findByStatusAndType(status, type);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by status and bedrooms
-    @GetMapping("/status/{status}/bedrooms/{bedrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByStatusAndBedrooms(
-            @PathVariable("status") UnitStatus status,
-            @PathVariable("bedrooms") Integer bedrooms) {
-        try {
-            List<Unit> units = unitRepository.findByStatusAndBedrooms(status, bedrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by type and bedrooms
-    @GetMapping("/type/{type}/bedrooms/{bedrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByTypeAndBedrooms(
-            @PathVariable("type") UnitType type,
-            @PathVariable("bedrooms") Integer bedrooms) {
-        try {
-            List<Unit> units = unitRepository.findByTypeAndBedrooms(type, bedrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by type, bedrooms and bathrooms
-    @GetMapping("/type/{type}/bedrooms/{bedrooms}/bathrooms/{bathrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByTypeBedroomsAndBathrooms(
-            @PathVariable("type") UnitType type,
-            @PathVariable("bedrooms") Integer bedrooms,
-            @PathVariable("bathrooms") Integer bathrooms) {
-        try {
-            List<Unit> units = unitRepository.findByTypeAndBedroomsAndBathrooms(type, bedrooms, bathrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by floor range
-    @GetMapping("/floor-range")
-    public ResponseEntity<List<Unit>> getUnitsByFloorRange(
-            @RequestParam("minFloor") Integer minFloor,
-            @RequestParam("maxFloor") Integer maxFloor) {
-        try {
-            List<Unit> units = unitRepository.findByFloorBetween(minFloor, maxFloor);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by bedrooms range
-    @GetMapping("/bedrooms-range")
-    public ResponseEntity<List<Unit>> getUnitsByBedroomsRange(
-            @RequestParam("minBedrooms") Integer minBedrooms,
-            @RequestParam("maxBedrooms") Integer maxBedrooms) {
-        try {
-            List<Unit> units = unitRepository.findByBedroomsBetween(minBedrooms, maxBedrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by bathrooms range
-    @GetMapping("/bathrooms-range")
-    public ResponseEntity<List<Unit>> getUnitsByBathroomsRange(
-            @RequestParam("minBathrooms") Integer minBathrooms,
-            @RequestParam("maxBathrooms") Integer maxBathrooms) {
-        try {
-            List<Unit> units = unitRepository.findByBathroomsBetween(minBathrooms, maxBathrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units reserved by buyer
-    @GetMapping("/reserved-by/{buyerId}")
-    public ResponseEntity<List<Unit>> getUnitsReservedByBuyer(@PathVariable("buyerId") Long buyerId) {
-        try {
-            List<Unit> units = unitRepository.findByReservedById(buyerId);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units sold to buyer
-    @GetMapping("/sold-to/{buyerId}")
-    public ResponseEntity<List<Unit>> getUnitsSoldToBuyer(@PathVariable("buyerId") Long buyerId) {
-        try {
-            List<Unit> units = unitRepository.findBySoldToId(buyerId);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units reserved within date range
-    @GetMapping("/reserved-date-range")
-    public ResponseEntity<List<Unit>> getUnitsReservedInDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<Unit> units = unitRepository.findByReservedDateBetween(startDate, endDate);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units sold within date range
-    @GetMapping("/sold-date-range")
-    public ResponseEntity<List<Unit>> getUnitsSoldInDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<Unit> units = unitRepository.findBySoldDateBetween(startDate, endDate);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units reserved after date
-    @GetMapping("/reserved-after/{date}")
-    public ResponseEntity<List<Unit>> getUnitsReservedAfter(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findByReservedDateAfter(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units sold after date
-    @GetMapping("/sold-after/{date}")
-    public ResponseEntity<List<Unit>> getUnitsSoldAfter(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findBySoldDateAfter(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units reserved before date
-    @GetMapping("/reserved-before/{date}")
-    public ResponseEntity<List<Unit>> getUnitsReservedBefore(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findByReservedDateBefore(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units sold before date
-    @GetMapping("/sold-before/{date}")
-    public ResponseEntity<List<Unit>> getUnitsSoldBefore(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findBySoldDateBefore(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Search units by unit number containing
-    @GetMapping("/search/unit-number/{unitNumber}")
-    public ResponseEntity<List<Unit>> searchUnitsByUnitNumber(@PathVariable("unitNumber") String unitNumber) {
-        try {
-            List<Unit> units = unitRepository.findByUnitNumberContaining(unitNumber);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Search units by description containing keyword
-    @GetMapping("/search/description/{keyword}")
-    public ResponseEntity<List<Unit>> searchUnitsByDescription(@PathVariable("keyword") String keyword) {
-        try {
-            List<Unit> units = unitRepository.findByDescriptionContaining(keyword);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units by feature
-    @GetMapping("/feature/{feature}")
-    public ResponseEntity<List<Unit>> getUnitsByFeature(@PathVariable("feature") String feature) {
-        try {
-            List<Unit> units = unitRepository.findByFeature(feature);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units with features
-    @GetMapping("/with-features")
-    public ResponseEntity<List<Unit>> getUnitsWithFeatures() {
-        try {
-            List<Unit> units = unitRepository.findUnitsWithFeatures();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units with images
-    @GetMapping("/with-images")
-    public ResponseEntity<List<Unit>> getUnitsWithImages() {
-        try {
-            List<Unit> units = unitRepository.findUnitsWithImages();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units with minimum features
-    @GetMapping("/min-features/{minFeatures}")
-    public ResponseEntity<List<Unit>> getUnitsWithMinimumFeatures(@PathVariable("minFeatures") int minFeatures) {
-        try {
-            List<Unit> units = unitRepository.findUnitsWithMinimumFeatures(minFeatures);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get units with minimum images
-    @GetMapping("/min-images/{minImages}")
-    public ResponseEntity<List<Unit>> getUnitsWithMinimumImages(@PathVariable("minImages") int minImages) {
-        try {
-            List<Unit> units = unitRepository.findUnitsWithMinimumImages(minImages);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units sorted by price (ascending)
-    @GetMapping("/available/price-asc")
-    public ResponseEntity<List<Unit>> getAvailableUnitsByPriceAsc() {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsByPriceAsc();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units sorted by price (descending)
-    @GetMapping("/available/price-desc")
-    public ResponseEntity<List<Unit>> getAvailableUnitsByPriceDesc() {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsByPriceDesc();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units sorted by sqft (ascending)
-    @GetMapping("/available/sqft-asc")
-    public ResponseEntity<List<Unit>> getAvailableUnitsBySqftAsc() {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsBySqftAsc();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units sorted by sqft (descending)
-    @GetMapping("/available/sqft-desc")
-    public ResponseEntity<List<Unit>> getAvailableUnitsBySqftDesc() {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsBySqftDesc();
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get expired reservations
-    @GetMapping("/expired-reservations/{date}")
-    public ResponseEntity<List<Unit>> getExpiredReservations(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findExpiredReservations(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get recent reservations
-    @GetMapping("/recent-reservations/{date}")
-    public ResponseEntity<List<Unit>> getRecentReservations(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findRecentReservations(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get recent sales
-    @GetMapping("/recent-sales/{date}")
-    public ResponseEntity<List<Unit>> getRecentSales(
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<Unit> units = unitRepository.findRecentSales(date);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get floors by project
-    @GetMapping("/project/{projectId}/floors")
-    public ResponseEntity<List<Integer>> getFloorsByProject(@PathVariable("projectId") Long projectId) {
-        try {
-            List<Integer> floors = unitRepository.findFloorsByProjectId(projectId);
-            if (floors.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(floors, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get unit types by project
-    @GetMapping("/project/{projectId}/unit-types")
-    public ResponseEntity<List<UnitType>> getUnitTypesByProject(@PathVariable("projectId") Long projectId) {
-        try {
-            List<UnitType> unitTypes = unitRepository.findUnitTypesByProjectId(projectId);
-            if (unitTypes.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(unitTypes, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units by project and floor
-    @GetMapping("/available/project/{projectId}/floor/{floor}")
-    public ResponseEntity<List<Unit>> getAvailableUnitsByProjectAndFloor(
-            @PathVariable("projectId") Long projectId,
-            @PathVariable("floor") Integer floor) {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsByProjectAndFloor(projectId, floor);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units by price range
-    @GetMapping("/available/price-range")
-    public ResponseEntity<List<Unit>> getAvailableUnitsByPriceRange(
-            @RequestParam("minPrice") BigDecimal minPrice,
-            @RequestParam("maxPrice") BigDecimal maxPrice) {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsByPriceRange(minPrice, maxPrice);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units by sqft range
-    @GetMapping("/available/sqft-range")
-    public ResponseEntity<List<Unit>> getAvailableUnitsBySqftRange(
-            @RequestParam("minSqft") Integer minSqft,
-            @RequestParam("maxSqft") Integer maxSqft) {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsBySqftRange(minSqft, maxSqft);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // READ - Get available units by bedrooms and bathrooms
-    @GetMapping("/available/bedrooms/{bedrooms}/bathrooms/{bathrooms}")
-    public ResponseEntity<List<Unit>> getAvailableUnitsByBedroomsAndBathrooms(
-            @PathVariable("bedrooms") Integer bedrooms,
-            @PathVariable("bathrooms") Integer bathrooms) {
-        try {
-            List<Unit> units = unitRepository.findAvailableUnitsByBedroomsAndBathrooms(bedrooms, bathrooms);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(units, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Full update of unit
+    // UPDATE - Update unit by ID
     @PutMapping("/{id}")
     public ResponseEntity<Unit> updateUnit(@PathVariable("id") Long id, @RequestBody Unit unit) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
-                unit.setId(id);
-                Unit updatedUnit = unitRepository.save(unit);
+                Unit unitToUpdate = existingUnit.get();
+
+                // Update fields that exist in the model
+                unitToUpdate.setIsFeatured(unit.isFeatured());
+                unitToUpdate.setUnitNumber(unit.getUnitNumber());
+                unitToUpdate.setFloor(unit.getFloor());
+                unitToUpdate.setBedrooms(unit.getBedrooms());
+                unitToUpdate.setBathrooms(unit.getBathrooms());
+                unitToUpdate.setSqft(unit.getSqft());
+                unitToUpdate.setDescription(unit.getDescription());
+                unitToUpdate.setFeatures(unit.getFeatures());
+                unitToUpdate.setImages(unit.getImages());
+                unitToUpdate.setStatus(unit.getStatus());
+                unitToUpdate.setType(unit.getType());
+                unitToUpdate.setPrice(unit.getPrice());
+                unitToUpdate.setCurrentStage(unit.getCurrentStage());
+                unitToUpdate.setProject(unit.getProject());
+                unitToUpdate.setBuyer(unit.getBuyer());
+
+                Unit updatedUnit = unitRepository.save(unitToUpdate);
                 return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -894,17 +320,11 @@ public class UnitController {
                 if (unitUpdates.getImages() != null) {
                     existingUnit.setImages(unitUpdates.getImages());
                 }
-                if (unitUpdates.getReservedBy() != null) {
-                    existingUnit.setReservedBy(unitUpdates.getReservedBy());
+                if (unitUpdates.getCurrentStage() != null) {
+                    existingUnit.setCurrentStage(unitUpdates.getCurrentStage());
                 }
-                if (unitUpdates.getReservedDate() != null) {
-                    existingUnit.setReservedDate(unitUpdates.getReservedDate());
-                }
-                if (unitUpdates.getSoldTo() != null) {
-                    existingUnit.setSoldTo(unitUpdates.getSoldTo());
-                }
-                if (unitUpdates.getSoldDate() != null) {
-                    existingUnit.setSoldDate(unitUpdates.getSoldDate());
+                if (unitUpdates.getBuyer() != null) {
+                    existingUnit.setBuyer(unitUpdates.getBuyer());
                 }
 
                 Unit updatedUnit = unitRepository.save(existingUnit);
@@ -935,14 +355,14 @@ public class UnitController {
         }
     }
 
-    // UPDATE - Update unit price
-    @PatchMapping("/{id}/price")
-    public ResponseEntity<Unit> updateUnitPrice(@PathVariable("id") Long id, @RequestParam("price") BigDecimal price) {
+    // UPDATE - Update construction stage
+    @PatchMapping("/{id}/construction-stage")
+    public ResponseEntity<Unit> updateConstructionStage(@PathVariable("id") Long id, @RequestParam("stage") ConstructionStage stage) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                unit.setPrice(price);
+                unit.setCurrentStage(stage);
                 Unit updatedUnit = unitRepository.save(unit);
                 return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
             } else {
@@ -953,88 +373,38 @@ public class UnitController {
         }
     }
 
-    // UPDATE - Update unit description
-    @PatchMapping("/{id}/description")
-    public ResponseEntity<Unit> updateUnitDescription(@PathVariable("id") Long id, @RequestParam("description") String description) {
+    // UPDATE - Assign buyer to unit
+    @PatchMapping("/{id}/assign-buyer/{buyerId}")
+    public ResponseEntity<Unit> assignBuyerToUnit(@PathVariable("id") Long id, @PathVariable("buyerId") Long buyerId) {
+        try {
+            Unit updatedUnit = unitService.assignBuyerToUnit(id, buyerId);
+            return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // UPDATE - Remove buyer from unit
+    @PatchMapping("/{id}/remove-buyer")
+    public ResponseEntity<Unit> removeBuyerFromUnit(@PathVariable("id") Long id) {
+        try {
+            Unit updatedUnit = unitService.removeBuyerFromUnit(id);
+            return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // UPDATE - Toggle featured status
+    @PatchMapping("/{id}/toggle-featured")
+    public ResponseEntity<Unit> toggleFeaturedStatus(@PathVariable("id") Long id) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                unit.setDescription(description);
+                unit.setIsFeatured(!unit.isFeatured());
                 Unit updatedUnit = unitRepository.save(unit);
                 return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Reserve unit
-    @PatchMapping("/{id}/reserve")
-    public ResponseEntity<Unit> reserveUnit(@PathVariable("id") Long id, @RequestParam("buyerId") Long buyerId) {
-        try {
-            Optional<Unit> existingUnit = unitRepository.findById(id);
-            if (existingUnit.isPresent()) {
-                Unit unit = existingUnit.get();
-                if (unit.getStatus() == UnitStatus.AVAILABLE) {
-                    unit.setStatus(UnitStatus.RESERVED);
-                    unit.setReservedBy(null); // Set buyer entity if needed
-                    unit.setReservedDate(LocalDate.now());
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-                }
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Sell unit
-    @PatchMapping("/{id}/sell")
-    public ResponseEntity<Unit> sellUnit(@PathVariable("id") Long id, @RequestParam("buyerId") Long buyerId) {
-        try {
-            Optional<Unit> existingUnit = unitRepository.findById(id);
-            if (existingUnit.isPresent()) {
-                Unit unit = existingUnit.get();
-                if (unit.getStatus() == UnitStatus.AVAILABLE || unit.getStatus() == UnitStatus.RESERVED) {
-                    unit.setStatus(UnitStatus.SOLD);
-                    unit.setSoldTo(null); // Set buyer entity if needed
-                    unit.setSoldDate(LocalDate.now());
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-                }
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Cancel reservation
-    @PatchMapping("/{id}/cancel-reservation")
-    public ResponseEntity<Unit> cancelReservation(@PathVariable("id") Long id) {
-        try {
-            Optional<Unit> existingUnit = unitRepository.findById(id);
-            if (existingUnit.isPresent()) {
-                Unit unit = existingUnit.get();
-                if (unit.getStatus() == UnitStatus.RESERVED) {
-                    unit.setStatus(UnitStatus.AVAILABLE);
-                    unit.setReservedBy(null);
-                    unit.setReservedDate(null);
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-                }
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -1050,16 +420,11 @@ public class UnitController {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                if (unit.getFeatures() == null) {
-                    unit.setFeatures(new java.util.ArrayList<>());
-                }
-                if (!unit.getFeatures().contains(feature)) {
+                if (unit.getFeatures() != null) {
                     unit.getFeatures().add(feature);
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(unit, HttpStatus.OK);
                 }
+                Unit updatedUnit = unitRepository.save(unit);
+                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -1075,137 +440,14 @@ public class UnitController {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                if (unit.getFeatures() != null && unit.getFeatures().contains(feature)) {
+                if (unit.getFeatures() != null) {
                     unit.getFeatures().remove(feature);
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(unit, HttpStatus.OK);
                 }
+                Unit updatedUnit = unitRepository.save(unit);
+                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Add image to unit
-    @PatchMapping("/{id}/add-image")
-    public ResponseEntity<Unit> addImageToUnit(@PathVariable("id") Long id, @RequestParam("imageUrl") String imageUrl) {
-        try {
-            Optional<Unit> existingUnit = unitRepository.findById(id);
-            if (existingUnit.isPresent()) {
-                Unit unit = existingUnit.get();
-                if (unit.getImages() == null) {
-                    unit.setImages(new java.util.ArrayList<>());
-                }
-                if (!unit.getImages().contains(imageUrl)) {
-                    unit.getImages().add(imageUrl);
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(unit, HttpStatus.OK);
-                }
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Remove image from unit
-    @PatchMapping("/{id}/remove-image")
-    public ResponseEntity<Unit> removeImageFromUnit(@PathVariable("id") Long id, @RequestParam("imageUrl") String imageUrl) {
-        try {
-            Optional<Unit> existingUnit = unitRepository.findById(id);
-            if (existingUnit.isPresent()) {
-                Unit unit = existingUnit.get();
-                if (unit.getImages() != null && unit.getImages().contains(imageUrl)) {
-                    unit.getImages().remove(imageUrl);
-                    Unit updatedUnit = unitRepository.save(unit);
-                    return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>(unit, HttpStatus.OK);
-                }
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Bulk update unit status
-    @PatchMapping("/bulk-update-status")
-    public ResponseEntity<List<Unit>> bulkUpdateUnitStatus(
-            @RequestParam("ids") List<Long> ids,
-            @RequestParam("status") UnitStatus status) {
-        try {
-            List<Unit> updatedUnits = ids.stream()
-                    .map(id -> unitRepository.findById(id))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .peek(unit -> unit.setStatus(status))
-                    .map(unit -> unitRepository.save(unit))
-                    .toList();
-
-            if (updatedUnits.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-            return new ResponseEntity<>(updatedUnits, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Bulk update unit prices
-    @PatchMapping("/bulk-update-price")
-    public ResponseEntity<List<Unit>> bulkUpdateUnitPrice(
-            @RequestParam("ids") List<Long> ids,
-            @RequestParam("price") BigDecimal price) {
-        try {
-            List<Unit> updatedUnits = ids.stream()
-                    .map(id -> unitRepository.findById(id))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .peek(unit -> unit.setPrice(price))
-                    .map(unit -> unitRepository.save(unit))
-                    .toList();
-
-            if (updatedUnits.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-            return new ResponseEntity<>(updatedUnits, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // UPDATE - Bulk price adjustment (percentage)
-    @PatchMapping("/bulk-adjust-price")
-    public ResponseEntity<List<Unit>> bulkAdjustUnitPrice(
-            @RequestParam("ids") List<Long> ids,
-            @RequestParam("percentage") Double percentage) {
-        try {
-            List<Unit> updatedUnits = ids.stream()
-                    .map(id -> unitRepository.findById(id))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .peek(unit -> {
-                        if (unit.getPrice() != null) {
-                            BigDecimal adjustment = unit.getPrice().multiply(BigDecimal.valueOf(percentage / 100));
-                            unit.setPrice(unit.getPrice().add(adjustment));
-                        }
-                    })
-                    .map(unit -> unitRepository.save(unit))
-                    .toList();
-
-            if (updatedUnits.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-            return new ResponseEntity<>(updatedUnits, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -1227,17 +469,6 @@ public class UnitController {
         }
     }
 
-    // DELETE - Delete all units
-    @DeleteMapping
-    public ResponseEntity<HttpStatus> deleteAllUnits() {
-        try {
-            unitRepository.deleteAll();
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // DELETE - Delete units by project ID
     @DeleteMapping("/project/{projectId}")
     public ResponseEntity<HttpStatus> deleteUnitsByProjectId(@PathVariable("projectId") Long projectId) {
@@ -1254,76 +485,8 @@ public class UnitController {
         }
     }
 
-    // DELETE - Delete units by status
-    @DeleteMapping("/status/{status}")
-    public ResponseEntity<HttpStatus> deleteUnitsByStatus(@PathVariable("status") UnitStatus status) {
-        try {
-            List<Unit> units = unitRepository.findByStatus(status);
-            if (!units.isEmpty()) {
-                unitRepository.deleteAll(units);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // DELETE - Delete units by type
-    @DeleteMapping("/type/{type}")
-    public ResponseEntity<HttpStatus> deleteUnitsByType(@PathVariable("type") UnitType type) {
-        try {
-            List<Unit> units = unitRepository.findByType(type);
-            if (!units.isEmpty()) {
-                unitRepository.deleteAll(units);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // DELETE - Delete units by floor
-    @DeleteMapping("/floor/{floor}")
-    public ResponseEntity<HttpStatus> deleteUnitsByFloor(@PathVariable("floor") Integer floor) {
-        try {
-            List<Unit> units = unitRepository.findByFloor(floor);
-            if (!units.isEmpty()) {
-                unitRepository.deleteAll(units);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // DELETE - Bulk delete units
-    @DeleteMapping("/bulk-delete")
-    public ResponseEntity<HttpStatus> bulkDeleteUnits(@RequestParam("ids") List<Long> ids) {
-        try {
-            List<Unit> unitsToDelete = ids.stream()
-                    .map(id -> unitRepository.findById(id))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .toList();
-
-            if (!unitsToDelete.isEmpty()) {
-                unitRepository.deleteAll(unitsToDelete);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // STATISTICS - Get unit count
+    // Utility endpoints
+    // GET - Get unit count
     @GetMapping("/count")
     public ResponseEntity<Long> getUnitCount() {
         try {
@@ -1334,130 +497,165 @@ public class UnitController {
         }
     }
 
-    // STATISTICS - Get unit count by status
+    // GET - Get unit count by status
     @GetMapping("/count/status/{status}")
     public ResponseEntity<Long> getUnitCountByStatus(@PathVariable("status") UnitStatus status) {
         try {
-            Long count = unitRepository.countByStatus(status);
-            return new ResponseEntity<>(count, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByStatus(status);
+            return new ResponseEntity<>((long) units.size(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get unit count by type
-    @GetMapping("/count/type/{type}")
-    public ResponseEntity<Long> getUnitCountByType(@PathVariable("type") UnitType type) {
-        try {
-            Long count = unitRepository.countByType(type);
-            return new ResponseEntity<>(count, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // STATISTICS - Get unit count by project
+    // GET - Get unit count by project
     @GetMapping("/count/project/{projectId}")
     public ResponseEntity<Long> getUnitCountByProject(@PathVariable("projectId") Long projectId) {
         try {
-            Long count = unitRepository.countByProjectId(projectId);
-            return new ResponseEntity<>(count, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByProjectId(projectId);
+            return new ResponseEntity<>((long) units.size(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get unit count by project and status
-    @GetMapping("/count/project/{projectId}/status/{status}")
-    public ResponseEntity<Long> getUnitCountByProjectAndStatus(
-            @PathVariable("projectId") Long projectId,
-            @PathVariable("status") UnitStatus status) {
+    // GET - Get available units
+    @GetMapping("/available")
+    public ResponseEntity<List<Unit>> getAvailableUnits() {
         try {
-            Long count = unitRepository.countByProjectIdAndStatus(projectId, status);
-            return new ResponseEntity<>(count, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByStatus(UnitStatus.AVAILABLE);
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(units, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get average price by status
-    @GetMapping("/average-price/status/{status}")
-    public ResponseEntity<BigDecimal> getAveragePriceByStatus(@PathVariable("status") UnitStatus status) {
+    // GET - Get sold units
+    @GetMapping("/sold")
+    public ResponseEntity<List<Unit>> getSoldUnits() {
         try {
-            BigDecimal averagePrice = unitRepository.getAveragePriceByStatus(status);
-            return new ResponseEntity<>(averagePrice, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByStatus(UnitStatus.SOLD);
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(units, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get average price by type
-    @GetMapping("/average-price/type/{type}")
-    public ResponseEntity<BigDecimal> getAveragePriceByType(@PathVariable("type") UnitType type) {
+    // GET - Get reserved units
+    @GetMapping("/reserved")
+    public ResponseEntity<List<Unit>> getReservedUnits() {
         try {
-            BigDecimal averagePrice = unitRepository.getAveragePriceByType(type);
-            return new ResponseEntity<>(averagePrice, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByStatus(UnitStatus.RESERVED);
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(units, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get average sqft by type
-    @GetMapping("/average-sqft/type/{type}")
-    public ResponseEntity<Double> getAverageSqftByType(@PathVariable("type") UnitType type) {
+    // GET - Search units by multiple criteria
+    @GetMapping("/search")
+    public ResponseEntity<List<Unit>> searchUnits(
+            @RequestParam(required = false) UnitType type,
+            @RequestParam(required = false) Integer minBedrooms,
+            @RequestParam(required = false) Integer maxBedrooms,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) UnitStatus status,
+            @RequestParam(required = false) Long projectId) {
         try {
-            Double averageSqft = unitRepository.getAverageSqftByType(type);
-            return new ResponseEntity<>(averageSqft, HttpStatus.OK);
+            List<Unit> units = unitService.searchUnits(type, minBedrooms, maxBedrooms, minPrice, maxPrice, status, projectId);
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(units, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    // GET - Get unit statistics for a project
 
-    // STATISTICS - Get minimum available price
-    @GetMapping("/min-available-price")
-    public ResponseEntity<BigDecimal> getMinAvailablePrice() {
+    // @GetMapping("/project/{projectId}/statistics")
+    // public ResponseEntity<UnitStatisticsDTO> getUnitStatisticsByProject(@PathVariable Long projectId) {
+    //     try {
+    //         UnitStatisticsDTO stats = UnitStatisticsDTO.builder()
+    //                 .totalUnits(unitRepository.findByProjectId(projectId).size())
+    //                 .availableUnits(unitService.getAvailableUnitsCountByProject(projectId))
+    //                 .soldUnits(unitService.getSoldUnitsCountByProject(projectId))
+    //                 .reservedUnits(unitService.getReservedUnitsCountByProject(projectId))
+    //                 .averagePrice(unitService.getAveragePriceByProject(projectId))
+    //                 .build();
+    //         return ResponseEntity.ok(stats);
+    //     } catch (Exception e) {
+    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
+// GET - Get units by construction stage
+    @GetMapping("/construction-stage/{stage}")
+    public ResponseEntity<List<Unit>> getUnitsByConstructionStage(@PathVariable ConstructionStage stage) {
         try {
-            BigDecimal minPrice = unitRepository.getMinAvailablePrice();
-            return new ResponseEntity<>(minPrice, HttpStatus.OK);
+            List<Unit> units = unitRepository.findByCurrentStage(stage);
+            if (units.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(units, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get maximum available price
-    @GetMapping("/max-available-price")
-    public ResponseEntity<BigDecimal> getMaxAvailablePrice() {
+// PATCH - Bulk update unit status
+    @PatchMapping("/bulk-update-status")
+    public ResponseEntity<List<Unit>> bulkUpdateUnitStatus(
+            @RequestParam List<Long> unitIds,
+            @RequestParam UnitStatus status) {
         try {
-            BigDecimal maxPrice = unitRepository.getMaxAvailablePrice();
-            return new ResponseEntity<>(maxPrice, HttpStatus.OK);
+            List<Unit> updatedUnits = unitIds.stream()
+                    .map(id -> unitRepository.findById(id))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .peek(unit -> unit.setStatus(status))
+                    .map(unitRepository::save)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(updatedUnits);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // STATISTICS - Get comprehensive unit statistics
-    @GetMapping("/statistics")
-    public ResponseEntity<UnitStatistics> getUnitStatistics() {
+// GET - Get similar units (same type, similar price range)
+    @GetMapping("/{id}/similar")
+    public ResponseEntity<List<Unit>> getSimilarUnits(@PathVariable Long id) {
         try {
-            UnitStatistics stats = UnitStatistics.builder()
-                    .totalUnits(unitRepository.count())
-                    .availableUnits(unitRepository.countByStatus(UnitStatus.AVAILABLE))
-                    .reservedUnits(unitRepository.countByStatus(UnitStatus.RESERVED))
-                    .soldUnits(unitRepository.countByStatus(UnitStatus.SOLD))
-                    .studioUnits(unitRepository.countByType(UnitType.STUDIO))
-                    .oneBrUnits(unitRepository.countByType(UnitType.ONE_BR))
-                    .twoBrUnits(unitRepository.countByType(UnitType.TWO_BR))
-                    .threeBrUnits(unitRepository.countByType(UnitType.THREE_BR))
-                    .fourBrUnits(unitRepository.countByType(UnitType.FOUR_BR))
-                    .penthouseUnits(unitRepository.countByType(UnitType.PENTHOUSE))
-                    .averageAvailablePrice(unitRepository.getAveragePriceByStatus(UnitStatus.AVAILABLE))
-                    .minAvailablePrice(unitRepository.getMinAvailablePrice())
-                    .maxAvailablePrice(unitRepository.getMaxAvailablePrice())
-                    .build();
+            Optional<Unit> unitOpt = unitRepository.findById(id);
+            if (unitOpt.isPresent()) {
+                Unit unit = unitOpt.get();
+                BigDecimal priceRange = unit.getPrice().multiply(BigDecimal.valueOf(0.2)); // 20% range
+                BigDecimal minPrice = unit.getPrice().subtract(priceRange);
+                BigDecimal maxPrice = unit.getPrice().add(priceRange);
 
-            return new ResponseEntity<>(stats, HttpStatus.OK);
+                List<Unit> similarUnits = unitRepository.findAll().stream()
+                        .filter(u -> !u.getId().equals(id))
+                        .filter(u -> u.getType() == unit.getType())
+                        .filter(u -> u.getPrice().compareTo(minPrice) >= 0 && u.getPrice().compareTo(maxPrice) <= 0)
+                        .limit(5)
+                        .collect(Collectors.toList());
+
+                return ResponseEntity.ok(similarUnits);
+            }
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }

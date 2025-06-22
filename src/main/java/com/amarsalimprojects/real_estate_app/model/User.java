@@ -2,14 +2,16 @@ package com.amarsalimprojects.real_estate_app.model;
 
 import java.time.LocalDateTime;
 
-import com.amarsalimprojects.real_estate_app.model.enums.UserRole;
+import com.amarsalimprojects.real_estate_app.enums.UserRole;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -35,6 +37,9 @@ public class User {
     @NotBlank(message = "Username is required")
     private String username;
 
+    private String firstName;
+    private String lastName;
+
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
     private String email;
@@ -45,11 +50,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
-    private String firstName;
-    private String lastName;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // 1:1 relationship with BuyerProfile
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private BuyerProfile buyerProfile;
 
     @PreUpdate
     protected void onUpdate() {
@@ -60,5 +66,4 @@ public class User {
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
     }
-
 }

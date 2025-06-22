@@ -1,27 +1,46 @@
-package com.amarsalimprojects.real_estate_app.service;
 
-import com.amarsalimprojects.real_estate_app.dto.ProjectDTO;
-import com.amarsalimprojects.real_estate_app.entity.Project;
-import com.amarsalimprojects.real_estate_app.mapper.ProjectMapper;
-import com.amarsalimprojects.real_estate_app.repository.ProjectRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+// @Service
+// @Transactional
+// public class ProjectService {
 
-import java.util.List;
+//     @Autowired
+//     private ProjectRepository projectRepository;
 
-@Service
-public class ProjectService {
+//     public Project createProject(Project project) {
+//         // Business logic validation
+//         validateProject(project);
+//         return projectRepository.save(project);
+//     }
 
-    @Autowired
-    private ProjectRepository projectRepository;
+//     public void updateProjectProgress(Long projectId, float progress) {
+//         Project project = projectRepository.findById(projectId)
+//                 .orElseThrow(() -> new ProjectNotFoundException("Project not found"));
 
-    @Autowired
-    private ProjectMapper projectMapper;
+//         project.setConstructionProgress(progress);
 
-    public List<ProjectDTO> getAllProjects() {
-        List<Project> projects = projectRepository.findAll();
-        return projects.stream()
-                .map(projectMapper::toProjectDTO)
-                .toList();
-    }
-}
+//         // Auto-complete project if progress is 100% and admin signed off
+//         if (progress >= 100 && project.isAdminSignedOff()) {
+//             project.setStatus(ProjectStatus.COMPLETED);
+//             project.setCompletionDate(LocalDateTime.now());
+//         }
+
+//         projectRepository.save(project);
+//     }
+
+//     private void validateProject(Project project) {
+//         // Add validation logic
+//     }
+
+        // Calculate project completion percentage including admin override
+// public float getActualProgress(Project project) {
+//     return project.isAdminSignedOff() ? 100f : project.getConstructionProgress();
+// }
+
+// // Check if project is overdue
+// public boolean isProjectOverdue(Project project) {
+//     return project.getTargetCompletionDate() != null && 
+//            LocalDateTime.now().isAfter(project.getTargetCompletionDate()) &&
+//            project.getStatus() != ProjectStatus.COMPLETED;
+// }
+
+// }

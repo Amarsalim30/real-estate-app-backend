@@ -1,11 +1,11 @@
-package com.amarsalimprojects.real_estate_app.requests;
+package com.amarsalimprojects.real_estate_app.dto.requests;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.amarsalimprojects.real_estate_app.model.enums.UnitStatus;
-import com.amarsalimprojects.real_estate_app.model.enums.UnitType;
+import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
+import com.amarsalimprojects.real_estate_app.enums.UnitType;
 
 import lombok.Data;
 

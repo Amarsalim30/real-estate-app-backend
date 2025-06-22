@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.requests;
+package com.amarsalimprojects.real_estate_app.dto.requests;
 
 public // // Statistics DTO class
         class UserStatistics {
