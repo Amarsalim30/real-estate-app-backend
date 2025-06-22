@@ -20,11 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amarsalimprojects.real_estate_app.dto.requests.LoginRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.UserStatistics;
 import com.amarsalimprojects.real_estate_app.enums.UserRole;
 import com.amarsalimprojects.real_estate_app.model.User;
 import com.amarsalimprojects.real_estate_app.repository.UserRepository;
-import com.amarsalimprojects.real_estate_app.requests.LoginRequest;
-import com.amarsalimprojects.real_estate_app.requests.UserStatistics;
 
 import jakarta.validation.Valid;
 

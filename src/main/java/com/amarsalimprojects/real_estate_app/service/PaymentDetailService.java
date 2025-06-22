@@ -1,18 +1,26 @@
 package com.amarsalimprojects.real_estate_app.service;
 
-import com.amarsalimprojects.real_estate_app.dto.*;
-import com.amarsalimprojects.real_estate_app.model.*;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
-import com.amarsalimprojects.real_estate_app.repository.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.amarsalimprojects.real_estate_app.dto.PaymentDetailAuditDTO;
+import com.amarsalimprojects.real_estate_app.dto.PaymentDetailStatisticsDTO;
+import com.amarsalimprojects.real_estate_app.dto.PaymentMethodBreakdownDTO;
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.model.Invoice;
+import com.amarsalimprojects.real_estate_app.model.PaymentDetail;
+import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
+import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
+import com.amarsalimprojects.real_estate_app.repository.PaymentDetailRepository;
+import com.amarsalimprojects.real_estate_app.repository.PaymentRepository;
 
 @Service
 @Transactional
@@ -30,94 +38,82 @@ public class PaymentDetailService {
     @Autowired
     private BuyerProfileRepository buyerProfileRepository;
 
-    public PaymentDetail createBankPaymentDetail(CreateBankPaymentRequest request) {
-        Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
-        Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
-        Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
-
-        if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
-            BankDetails bankDetails = new BankDetails(
-                    request.getBankName(),
-                    request.getAccountLast4(),
-                    request.getRoutingNumber()
-            );
-
-            PaymentDetail paymentDetail = PaymentDetail.builder()
-                    .amount(request.getAmount())
-                    .status(PaymentStatus.PENDING)
-                    .method(PaymentMethod.BANK_TRANSFER)
-                    .transactionId(request.getTransactionId())
-                    .payment(paymentOpt.get())
-                    .invoice(invoiceOpt.get())
-                    .buyer(buyerOpt.get())
-                    .bankDetails(bankDetails)
-                    .build();
-
-            return paymentDetailRepository.save(paymentDetail);
-        } else {
-            throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
-        }
-    }
-
-    public PaymentDetail createCardPaymentDetail(CreateCardPaymentRequest request) {
-        Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
-        Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
-        Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
-
-        if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
-            CardDetails cardDetails = new CardDetails(
-                    request.getLastFour(),
-                    request.getBrand(),
-                    request.getExpiryMonth(),
-                    request.getExpiryYear()
-            );
-
-            PaymentDetail paymentDetail = PaymentDetail.builder()
-                    .amount(request.getAmount())
-                    .status(PaymentStatus.PENDING)
-                    .method(PaymentMethod.CREDIT_CARD)
-                    .transactionId(request.getTransactionId())
-                    .payment(paymentOpt.get())
-                    .invoice(invoiceOpt.get())
-                    .buyer(buyerOpt.get())
-                    .cardDetails(cardDetails)
-                    .build();
-
-            return paymentDetailRepository.save(paymentDetail);
-        } else {
-            throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
-        }
-    }
-
-    public PaymentDetail createCheckPaymentDetail(CreateCheckPaymentRequest request) {
-        Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
-        Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
-        Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
-
-        if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
-            CheckDetails checkDetails = new CheckDetails(
-                    request.getCheckNumber(),
-                    request.getBankName(),
-                    request.getAccountNumber()
-            );
-
-            PaymentDetail paymentDetail = PaymentDetail.builder()
-                    .amount(request.getAmount())
-                    .status(PaymentStatus.PENDING)
-                    .method(PaymentMethod.CHECK)
-                    .transactionId(request.getTransactionId())
-                    .payment(paymentOpt.get())
-                    .invoice(invoiceOpt.get())
-                    .buyer(buyerOpt.get())
-                    .checkDetails(checkDetails)
-                    .build();
-
-            return paymentDetailRepository.save(paymentDetail);
-        } else {
-            throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
-        }
-    }
-
+    // public PaymentDetail createBankPaymentDetail(CreateBankPaymentRequest request) {
+    //     Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
+    //     Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
+    //     Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
+    //     if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
+    //         BankDetails bankDetails = new BankDetails(
+    //                 request.getBankName(),
+    //                 request.getAccountLast4(),
+    //                 request.getRoutingNumber()
+    //         );
+    //         PaymentDetail paymentDetail = PaymentDetail.builder()
+    //                 .amount(request.getAmount())
+    //                 .status(PaymentStatus.PENDING)
+    //                 .method(PaymentMethod.BANK_TRANSFER)
+    //                 .transactionId(request.getTransactionId())
+    //                 .payment(paymentOpt.get())
+    //                 .invoice(invoiceOpt.get())
+    //                 .buyer(buyerOpt.get())
+    //                 .bankDetails(bankDetails)
+    //                 .build();
+    //         return paymentDetailRepository.save(paymentDetail);
+    //     } else {
+    //         throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
+    //     }
+    // }
+    // public PaymentDetail createCardPaymentDetail(CreateCardPaymentRequest request) {
+    //     Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
+    //     Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
+    //     Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
+    //     if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
+    //         CardDetails cardDetails = new CardDetails(
+    //                 request.getLastFour(),
+    //                 request.getBrand(),
+    //                 request.getExpiryMonth(),
+    //                 request.getExpiryYear()
+    //         );
+    //         PaymentDetail paymentDetail = PaymentDetail.builder()
+    //                 .amount(request.getAmount())
+    //                 .status(PaymentStatus.PENDING)
+    //                 .method(PaymentMethod.CREDIT_CARD)
+    //                 .transactionId(request.getTransactionId())
+    //                 .payment(paymentOpt.get())
+    //                 .invoice(invoiceOpt.get())
+    //                 .buyer(buyerOpt.get())
+    //                 .cardDetails(cardDetails)
+    //                 .build();
+    //         return paymentDetailRepository.save(paymentDetail);
+    //     } else {
+    //         throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
+    //     }
+    // }
+    // public PaymentDetail createCheckPaymentDetail(CreateCheckPaymentRequest request) {
+    //     Optional<Payment> paymentOpt = paymentRepository.findById(request.getPaymentId());
+    //     Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
+    //     Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(request.getBuyerId());
+    //     if (paymentOpt.isPresent() && invoiceOpt.isPresent() && buyerOpt.isPresent()) {
+    //         CheckDetails checkDetails = new CheckDetails(
+    //                 request.getCheckNumber(),
+    //                 request.getBankName(),
+    //                 request.getAccountNumber()
+    //         );
+    //         PaymentDetail paymentDetail = PaymentDetail.builder()
+    //                 .amount(request.getAmount())
+    //                 .status(PaymentStatus.PENDING)
+    //                 .method(PaymentMethod.CHECK)
+    //                 .transactionId(request.getTransactionId())
+    //                 .payment(paymentOpt.get())
+    //                 .invoice(invoiceOpt.get())
+    //                 .buyer(buyerOpt.get())
+    //                 .checkDetails(checkDetails)
+    //                 .build();
+    //         return paymentDetailRepository.save(paymentDetail);
+    //     } else {
+    //         throw new IllegalArgumentException("Payment, Invoice, or Buyer not found");
+    //     }
+    // }
     public PaymentDetailStatisticsDTO getPaymentDetailStatistics() {
         long totalPaymentDetails = paymentDetailRepository.count();
         long completedPaymentDetails = paymentDetailRepository.countByStatus(PaymentStatus.COMPLETED);

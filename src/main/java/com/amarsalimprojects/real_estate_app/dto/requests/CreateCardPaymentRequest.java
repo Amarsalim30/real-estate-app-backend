@@ -1,4 +1,4 @@
-package com.amarsalimprojects.real_estate_app.dto;
+package com.amarsalimprojects.real_estate_app.dto.requests;
 
 import java.math.BigDecimal;
 
@@ -11,14 +11,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateBankPaymentRequest {
+public class CreateCardPaymentRequest {
 
     private Long paymentId;
     private Long invoiceId;
     private Long buyerId;
     private BigDecimal amount;
     private String transactionId;
-    private String bankName;
-    private String accountLast4;
-    private String routingNumber;
+    private String lastFour;
+    private String brand;
+    private String expiryMonth;
+    private String expiryYear;
 }

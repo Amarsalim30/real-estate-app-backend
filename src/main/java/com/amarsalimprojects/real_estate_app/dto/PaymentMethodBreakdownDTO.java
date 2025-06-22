@@ -1,6 +1,6 @@
 package com.amarsalimprojects.real_estate_app.dto;
 
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

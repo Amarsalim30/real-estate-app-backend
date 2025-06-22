@@ -1,16 +1,14 @@
 package com.amarsalimprojects.real_estate_app.dto;
 
-package com.amarsalimprojects.real_estate_app.dto;
+import java.math.BigDecimal;
+import java.util.List;
 
 import com.amarsalimprojects.real_estate_app.model.Payment;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

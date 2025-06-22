@@ -1,20 +1,34 @@
 package com.amarsalimprojects.real_estate_app.controller;
 
-import com.amarsalimprojects.real_estate_app.model.PaymentDetail;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentMethod;
-import com.amarsalimprojects.real_estate_app.model.enums.PaymentStatus;
-import com.amarsalimprojects.real_estate_app.repository.PaymentDetailRepository;
-import com.amarsalimprojects.real_estate_app.service.PaymentDetailService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.amarsalimprojects.real_estate_app.dto.PaymentDetailAuditDTO;
+import com.amarsalimprojects.real_estate_app.dto.PaymentDetailStatisticsDTO;
+import com.amarsalimprojects.real_estate_app.dto.PaymentMethodBreakdownDTO;
+import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
+import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.model.PaymentDetail;
+import com.amarsalimprojects.real_estate_app.repository.PaymentDetailRepository;
+import com.amarsalimprojects.real_estate_app.service.PaymentDetailService;
 
 @RestController
 @RequestMapping("/api/payment-details")
@@ -701,39 +715,36 @@ public class PaymentDetailController {
         }
     }
 
-    // POST - Create payment detail with bank details
-    @PostMapping("/bank-payment")
-    public ResponseEntity<PaymentDetail> createBankPaymentDetail(@RequestBody CreateBankPaymentRequest request) {
-        try {
-            PaymentDetail paymentDetail = paymentDetailService.createBankPaymentDetail(request);
-            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // POST - Create payment detail with card details
-    @PostMapping("/card-payment")
-    public ResponseEntity<PaymentDetail> createCardPaymentDetail(@RequestBody CreateCardPaymentRequest request) {
-        try {
-            PaymentDetail paymentDetail = paymentDetailService.createCardPaymentDetail(request);
-            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // POST - Create payment detail with check details
-    @PostMapping("/check-payment")
-    public ResponseEntity<PaymentDetail> createCheckPaymentDetail(@RequestBody CreateCheckPaymentRequest request) {
-        try {
-            PaymentDetail paymentDetail = paymentDetailService.createCheckPaymentDetail(request);
-            return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
+    // // POST - Create payment detail with bank details
+    // @PostMapping("/bank-payment")
+    // public ResponseEntity<PaymentDetail> createBankPaymentDetail(@RequestBody CreateBankPaymentRequest request) {
+    //     try {
+    //         PaymentDetail paymentDetail = paymentDetailService.createBankPaymentDetail(request);
+    //         return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
+    //     } catch (Exception e) {
+    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
+    // // POST - Create payment detail with card details
+    // @PostMapping("/card-payment")
+    // public ResponseEntity<PaymentDetail> createCardPaymentDetail(@RequestBody CreateCardPaymentRequest request) {
+    //     try {
+    //         PaymentDetail paymentDetail = paymentDetailService.createCardPaymentDetail(request);
+    //         return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
+    //     } catch (Exception e) {
+    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
+    // // POST - Create payment detail with check details
+    // @PostMapping("/check-payment")
+    // public ResponseEntity<PaymentDetail> createCheckPaymentDetail(@RequestBody CreateCheckPaymentRequest request) {
+    //     try {
+    //         PaymentDetail paymentDetail = paymentDetailService.createCheckPaymentDetail(request);
+    //         return new ResponseEntity<>(paymentDetail, HttpStatus.CREATED);
+    //     } catch (Exception e) {
+    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
     // PATCH - Bulk update payment detail status
     @PatchMapping("/bulk-update-status")
     public ResponseEntity<List<PaymentDetail>> bulkUpdatePaymentDetailStatus(
@@ -782,4 +793,158 @@ public class PaymentDetailController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    // Additional endpoints to add to PaymentDetailController
+
+// GET - Get payment details with pagination
+    @GetMapping("/paginated")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsPaginated(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        try {
+            List<PaymentDetail> allPaymentDetails = paymentDetailRepository.findAll();
+            int startIndex = page * size;
+            int endIndex = Math.min(startIndex + size, allPaymentDetails.size());
+
+            if (startIndex >= allPaymentDetails.size()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            List<PaymentDetail> paginatedPaymentDetails = allPaymentDetails.subList(startIndex, endIndex);
+            return new ResponseEntity<>(paginatedPaymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// GET - Get payment details by buyer email
+    @GetMapping("/buyer/email/{email}")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByBuyerEmail(@PathVariable("email") String email) {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByBuyerEmail(email);
+            if (paymentDetails.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// GET - Get high-value payment details (above threshold)
+    @GetMapping("/high-value/{threshold}")
+    public ResponseEntity<List<PaymentDetail>> getHighValuePaymentDetails(@PathVariable("threshold") BigDecimal threshold) {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByAmountGreaterThan(threshold);
+            if (paymentDetails.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// GET - Get payment details with transaction IDs
+    @GetMapping("/with-transaction-id")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsWithTransactionId() {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findAllWithTransactionId();
+            if (paymentDetails.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// GET - Get payment details by method and date range
+    @GetMapping("/method/{method}/date-range")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByMethodAndDateRange(
+            @PathVariable("method") PaymentMethod method,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        try {
+            List<PaymentDetail> paymentDetails = paymentDetailRepository.findByMethodAndDateRange(method, startDate, endDate);
+            if (paymentDetails.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(paymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// POST - Validate payment detail before creation
+    @PostMapping("/validate")
+    public ResponseEntity<Boolean> validatePaymentDetail(@RequestBody PaymentDetail paymentDetail) {
+        try {
+            boolean isValid = paymentDetailService.validatePaymentDetailAmount(
+                    paymentDetail.getInvoice().getId(),
+                    paymentDetail.getAmount()
+            );
+            return new ResponseEntity<>(isValid, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(false, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// // GET - Get payment details summary by buyer
+//     @GetMapping("/summary/buyer/{buyerId}")
+//     public ResponseEntity<PaymentDetailSummaryDTO> getPaymentDetailSummaryByBuyer(@PathVariable("buyerId") Long buyerId) {
+//         try {
+//             List<PaymentDetail> paymentDetails = paymentDetailRepository.findByBuyerId(buyerId);
+//             BigDecimal totalAmount = paymentDetails.stream()
+//                     .map(PaymentDetail::getAmount)
+//                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+//             long completedCount = paymentDetails.stream()
+//                     .filter(pd -> pd.getStatus() == PaymentStatus.COMPLETED)
+//                     .count();
+//             PaymentDetailSummaryDTO summary = PaymentDetailSummaryDTO.builder()
+//                     .buyerId(buyerId)
+//                     .totalPaymentDetails((long) paymentDetails.size())
+//                     .completedPaymentDetails(completedCount)
+//                     .totalAmount(totalAmount)
+//                     .paymentDetails(paymentDetails)
+//                     .build();
+//             return new ResponseEntity<>(summary, HttpStatus.OK);
+//         } catch (Exception e) {
+//             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+//         }
+//     }
+// PATCH - Mark multiple payment details as failed
+    @PatchMapping("/bulk-mark-failed")
+    public ResponseEntity<List<PaymentDetail>> bulkMarkPaymentDetailsAsFailed(@RequestParam("ids") List<Long> ids) {
+        try {
+            List<PaymentDetail> updatedPaymentDetails = paymentDetailService.bulkUpdateStatus(ids, PaymentStatus.FAILED);
+            return new ResponseEntity<>(updatedPaymentDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+// GET - Get payment details requiring attention (failed or pending for too long)
+    @GetMapping("/requiring-attention")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsRequiringAttention() {
+        try {
+            LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24); // 24 hours ago
+
+            List<PaymentDetail> failedPayments = paymentDetailRepository.findByStatus(PaymentStatus.FAILED);
+            List<PaymentDetail> oldPendingPayments = paymentDetailRepository.findByStatusAndCreatedAtBetween(
+                    PaymentStatus.PENDING,
+                    LocalDateTime.now().minusDays(7),
+                    cutoffTime
+            );
+
+            failedPayments.addAll(oldPendingPayments);
+
+            if (failedPayments.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(failedPayments, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
