@@ -1,6 +1,7 @@
 package com.amarsalimprojects.real_estate_app.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -22,13 +23,17 @@ public class UnitDTO {
     private Set<String> features;
     private List<String> images;
     private UnitStatus status;
-    private UnitType type;
+    private UnitType unitType;
     private BigDecimal price;
     private ConstructionStage currentStage;
     private String projectName;
     private Long projectId;
     private String buyerEmail;
     private Long buyerId;
+    private LocalDateTime reservedDate;
+    private LocalDateTime soldDate;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public UnitDTO() {
     }
@@ -45,9 +50,13 @@ public class UnitDTO {
         this.features = unit.getFeatures();
         this.images = unit.getImages();
         this.status = unit.getStatus();
-        this.type = unit.getType();
+        this.unitType = unit.getUnitType();
         this.price = unit.getPrice();
         this.currentStage = unit.getCurrentStage();
+        this.reservedDate = unit.getReservedDate();
+        this.soldDate = unit.getSoldDate();
+        this.createdAt = unit.getCreatedAt();
+        this.updatedAt = unit.getUpdatedAt();
 
         if (unit.getProject() != null) {
             this.projectName = unit.getProject().getName();
@@ -57,6 +66,130 @@ public class UnitDTO {
         if (unit.getBuyer() != null) {
             this.buyerEmail = unit.getBuyer().getEmail();
             this.buyerId = unit.getBuyer().getId();
+        }
+    }
+
+    // Builder pattern
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private UnitDTO unitDTO = new UnitDTO();
+
+        public Builder id(Long id) {
+            unitDTO.id = id;
+            return this;
+        }
+
+        public Builder isFeatured(boolean isFeatured) {
+            unitDTO.isFeatured = isFeatured;
+            return this;
+        }
+
+        public Builder unitNumber(String unitNumber) {
+            unitDTO.unitNumber = unitNumber;
+            return this;
+        }
+
+        public Builder floor(Integer floor) {
+            unitDTO.floor = floor;
+            return this;
+        }
+
+        public Builder bedrooms(Integer bedrooms) {
+            unitDTO.bedrooms = bedrooms;
+            return this;
+        }
+
+        public Builder bathrooms(Integer bathrooms) {
+            unitDTO.bathrooms = bathrooms;
+            return this;
+        }
+
+        public Builder sqft(Integer sqft) {
+            unitDTO.sqft = sqft;
+            return this;
+        }
+
+        public Builder description(String description) {
+            unitDTO.description = description;
+            return this;
+        }
+
+        public Builder features(Set<String> features) {
+            unitDTO.features = features;
+            return this;
+        }
+
+        public Builder images(List<String> images) {
+            unitDTO.images = images;
+            return this;
+        }
+
+        public Builder status(UnitStatus status) {
+            unitDTO.status = status;
+            return this;
+        }
+
+        public Builder type(UnitType type) {
+            unitDTO.unitType = type;
+            return this;
+        }
+
+        public Builder price(BigDecimal price) {
+            unitDTO.price = price;
+            return this;
+        }
+
+        public Builder currentStage(ConstructionStage currentStage) {
+            unitDTO.currentStage = currentStage;
+            return this;
+        }
+
+        public Builder projectName(String projectName) {
+            unitDTO.projectName = projectName;
+            return this;
+        }
+
+        public Builder projectId(Long projectId) {
+            unitDTO.projectId = projectId;
+            return this;
+        }
+
+        public Builder buyerEmail(String buyerEmail) {
+            unitDTO.buyerEmail = buyerEmail;
+            return this;
+        }
+
+        public Builder buyerId(Long buyerId) {
+            unitDTO.buyerId = buyerId;
+            return this;
+        }
+
+        public Builder reservedDate(LocalDateTime reservedDate) {
+            unitDTO.reservedDate = reservedDate;
+            return this;
+        }
+
+        public Builder soldDate(LocalDateTime soldDate) {
+            unitDTO.soldDate = soldDate;
+            return this;
+        }
+
+        public Builder createdAt(LocalDateTime createdAt) {
+            unitDTO.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(LocalDateTime updatedAt) {
+            unitDTO.updatedAt = updatedAt;
+            return this;
+        }
+
+        public UnitDTO build() {
+            return unitDTO;
         }
     }
 
@@ -149,12 +282,12 @@ public class UnitDTO {
         this.status = status;
     }
 
-    public UnitType getType() {
-        return type;
+    public UnitType getUnitType() {
+        return unitType;
     }
 
     public void setType(UnitType type) {
-        this.type = type;
+        this.unitType = type;
     }
 
     public BigDecimal getPrice() {
@@ -203,5 +336,37 @@ public class UnitDTO {
 
     public void setBuyerId(Long buyerId) {
         this.buyerId = buyerId;
+    }
+
+    public LocalDateTime getReservedDate() {
+        return reservedDate;
+    }
+
+    public void setReservedDate(LocalDateTime reservedDate) {
+        this.reservedDate = reservedDate;
+    }
+
+    public LocalDateTime getSoldDate() {
+        return soldDate;
+    }
+
+    public void setSoldDate(LocalDateTime soldDate) {
+        this.soldDate = soldDate;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

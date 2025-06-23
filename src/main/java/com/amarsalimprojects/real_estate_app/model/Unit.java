@@ -8,6 +8,7 @@ import java.util.Set;
 import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
 import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
 import com.amarsalimprojects.real_estate_app.enums.UnitType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -56,9 +57,12 @@ public class Unit {
     private UnitStatus status;
 
     @Enumerated(EnumType.STRING)
-    private UnitType type;
+    private UnitType unitType;
 
     private BigDecimal price;
+
+    private LocalDateTime reservedDate;
+    private LocalDateTime soldDate;
 
     //Construction Progress
     @Enumerated(EnumType.STRING)
@@ -70,6 +74,7 @@ public class Unit {
     // FK to Project (belongs to)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
+    @JsonBackReference
     private Project project;
 
     // FK to BuyerProfile (1:* from BuyerProfile perspective)

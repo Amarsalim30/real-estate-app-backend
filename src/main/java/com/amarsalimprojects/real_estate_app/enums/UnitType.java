@@ -5,6 +5,7 @@ public enum UnitType {
     ONE_BEDROOM,
     TWO_BEDROOM,
     THREE_BEDROOM,
+    APARTMENT,
     PENTHOUSE,
     DUPLEX,
     VILLA,

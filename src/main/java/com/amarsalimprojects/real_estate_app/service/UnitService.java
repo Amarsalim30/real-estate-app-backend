@@ -6,14 +6,20 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.amarsalimprojects.real_estate_app.dto.requests.UnitRequest;
 import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
 import com.amarsalimprojects.real_estate_app.enums.UnitType;
+import com.amarsalimprojects.real_estate_app.mapper.UnitMapper;
 import com.amarsalimprojects.real_estate_app.model.BuyerProfile;
+import com.amarsalimprojects.real_estate_app.model.Project;
 import com.amarsalimprojects.real_estate_app.model.Unit;
 import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
+import com.amarsalimprojects.real_estate_app.repository.ProjectRepository;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 
 @Service
@@ -24,8 +30,39 @@ public class UnitService {
     private UnitRepository unitRepository;
 
     @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private UnitMapper unitMapper;
+
+    @Autowired
     private BuyerProfileRepository buyerProfileRepository;
 
+    @Transactional
+    public Unit addUnitToProject(Long projectId, UnitRequest unitRequest) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        Unit unit = unitMapper.toEntity(unitRequest);
+
+        project.addUnit(unit); // Bi-directional
+        projectRepository.save(project); // Persists everything due to cascade
+
+        return unit;
+    }
+
+    @Transactional
+    public void removeUnitFromProject(Long projectId, Long unitId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+
+        Unit unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unit not found"));
+
+        project.removeUnit(unit); // remove from list and break reference
+        projectRepository.save(project); // `orphanRemoval = true` deletes unit
+    }
+
+    @Transactional
     public Unit assignBuyerToUnit(Long unitId, Long buyerId) {
         Optional<Unit> unitOpt = unitRepository.findById(unitId);
         Optional<BuyerProfile> buyerOpt = buyerProfileRepository.findById(buyerId);
@@ -83,7 +120,7 @@ public class UnitService {
         List<Unit> units = unitRepository.findAll();
 
         return units.stream()
-                .filter(unit -> type == null || unit.getType() == type)
+                .filter(unit -> type == null || unit.getUnitType() == type)
                 .filter(unit -> minBedrooms == null || unit.getBedrooms() >= minBedrooms)
                 .filter(unit -> maxBedrooms == null || unit.getBedrooms() <= maxBedrooms)
                 .filter(unit -> minPrice == null || unit.getPrice().compareTo(minPrice) >= 0)
@@ -111,6 +148,9 @@ public class UnitService {
 
     public BigDecimal getAveragePriceByProject(Long projectId) {
         List<Unit> units = unitRepository.findByProjectId(projectId);
+        if (units.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
         return units.stream()
                 .map(Unit::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)

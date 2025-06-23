@@ -32,7 +32,7 @@ public class BuyerProfile {
     private String email;
     private String phone;
     private String address;
-    private String County;
+    private String county;
 
     private String nationalId;
     private String kraPin;

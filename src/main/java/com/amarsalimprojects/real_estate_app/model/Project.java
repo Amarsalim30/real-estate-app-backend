@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.amarsalimprojects.real_estate_app.enums.ProjectStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,21 +66,24 @@ public class Project {
     @ElementCollection
     private Set<String> amenities;
 
-    //selling Projects as a whole e.g mansion big money
-    // FK to BuyerProfile (1:* from BuyerProfile perspective)
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "buyer_id")
-    // private BuyerProfile buyer;
-    // // 1:1 relationship with Invoice
-    // @OneToOne(mappedBy = "unit")
-    // private Invoice invoice;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     // 1:* relationship with Units
     @Builder.Default
-    @OneToMany(mappedBy = "project")
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Unit> units = new ArrayList<>();
+
+    public void addUnit(Unit unit) {
+        units.add(unit);
+        unit.setProject(this); // set reverse side
+    }
+
+    public void removeUnit(Unit unit) {
+        units.remove(unit);
+        unit.setProject(null); // break link
+    }
 
     // Returns 100 if adminSignedOff is true
     public float getDisplayableProgress() {
@@ -93,5 +98,15 @@ public class Project {
     @PrePersist
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
+
+        // Set default construction stage info
+        if (status == null) {
+            status = ProjectStatus.UNDER_CONSTRUCTION; // default project status
+        }
+
+        if (constructionProgress == 0f) {
+            constructionProgress = 0f; // default progress = planning
+        }
     }
+
 }

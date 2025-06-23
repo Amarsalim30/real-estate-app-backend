@@ -23,7 +23,7 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
 
     List<Unit> findByStatus(UnitStatus status);
 
-    List<Unit> findByType(UnitType type);
+    List<Unit> findByUnitType(UnitType unitType);
 
     List<Unit> findByFloor(Integer floor);
 

@@ -1,5 +1,5 @@
 N:B//This is just a visualization for the relationships between the entities in the system.
-The data should not be taken as real .
+The data should not be taken as real-amarsalimprojects .
 
 [User] 1───1 [BuyerProfile] 1───* [Unit] 1───1 [Invoice] 1───* [Payment] 1───* [PaymentDetail]
                                      │                             │                │

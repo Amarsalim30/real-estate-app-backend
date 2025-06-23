@@ -1,57 +1,130 @@
 package com.amarsalimprojects.real_estate_app.mapper;
 
-import com.amarsalimprojects.real_estate_app.dto.UnitDTO;
-import com.amarsalimprojects.real_estate_app.model.Project;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.amarsalimprojects.real_estate_app.dto.requests.UnitRequest;
+import com.amarsalimprojects.real_estate_app.dto.responses.UnitResponse;
 import com.amarsalimprojects.real_estate_app.model.Unit;
 
+@Component
 public class UnitMapper {
 
-    public static Unit toUnit(UnitDTO unitDTO) {
-        Unit unit = Unit.builder()
-                .id(unitDTO.getId())
-                .unitNumber(unitDTO.getUnitNumber())
-                .floor(unitDTO.getFloor())
-                .type(unitDTO.getType())
-                .bedrooms(unitDTO.getBedrooms())
-                .bathrooms(unitDTO.getBathrooms())
-                .sqft(unitDTO.getSqft())
-                .price(unitDTO.getPrice())
-                .status(unitDTO.getStatus())
-                .description(unitDTO.getDescription())
-                .features(unitDTO.getFeatures())
-                .images(unitDTO.getImages())
-                .reservedDate(unitDTO.getReservedDate())
-                .soldDate(unitDTO.getSoldDate())
-                .createdAt(unitDTO.getCreatedAt())
-                .updatedAt(unitDTO.getUpdatedAt())
-                .build();
+    public UnitResponse toResponse(Unit unit) {
+        if (unit == null) {
+            return null;
+        }
 
-        // You will need to fetch and assign project, reservedBy, and soldTo separately
-        return unit;
-    }
-
-    public static UnitDTO toDTO(Unit unit) {
-        Project project = unit.getProject();
-        return UnitDTO.builder()
+        return UnitResponse.builder()
                 .id(unit.getId())
-                .projectId(project.getId())
+                .projectId(unit.getProject() != null ? unit.getProject().getId() : null)
+                .projectName(unit.getProject() != null ? unit.getProject().getName() : null)
                 .unitNumber(unit.getUnitNumber())
                 .floor(unit.getFloor())
-                .type(unit.getType())
                 .bedrooms(unit.getBedrooms())
                 .bathrooms(unit.getBathrooms())
                 .sqft(unit.getSqft())
-                .price(unit.getPrice())
-                .status(unit.getStatus())
                 .description(unit.getDescription())
                 .features(unit.getFeatures())
                 .images(unit.getImages())
-                .reservedDate(unit.getReservedDate())
-                .soldDate(unit.getSoldDate())
+                .status(unit.getStatus())
+                .unitType(unit.getUnitType())
+                .price(unit.getPrice())
+                .reservedDate(unit.getReservedDate() != null ? unit.getReservedDate().toLocalDate() : null)
+                .soldDate(unit.getSoldDate() != null ? unit.getSoldDate().toLocalDate() : null)
+                .currentStage(unit.getCurrentStage())
+                .featured(unit.isFeatured())
+                .buyerId(unit.getBuyer() != null ? unit.getBuyer().getId() : null)
+                .buyerEmail(unit.getBuyer() != null ? unit.getBuyer().getEmail() : null)
                 .createdAt(unit.getCreatedAt())
                 .updatedAt(unit.getUpdatedAt())
-                // You can optionally include projectId, buyer names etc. as needed
                 .build();
     }
 
+    public Unit toEntity(UnitRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return Unit.builder()
+                .unitNumber(request.getUnitNumber())
+                .floor(request.getFloor())
+                .bedrooms(request.getBedrooms())
+                .bathrooms(request.getBathrooms())
+                .sqft(request.getSqft())
+                .description(request.getDescription())
+                .features(request.getFeatures() != null ? new HashSet<>(request.getFeatures()) : null)
+                .images(request.getImages())
+                .status(request.getStatus())
+                .unitType(request.getUnitType())
+                .price(request.getPrice())
+                .currentStage(request.getConstructionStage())
+                .isFeatured(request.isFeatured())
+                .reservedDate(request.getReservedDate() != null ? request.getReservedDate().atStartOfDay() : null)
+                .soldDate(request.getSoldDate() != null ? request.getSoldDate().atStartOfDay() : null)
+                .build();
+    }
+
+    public void updateEntityFromRequest(Unit unit, UnitRequest request) {
+        if (unit == null || request == null) {
+            return;
+        }
+
+        if (request.getUnitNumber() != null) {
+            unit.setUnitNumber(request.getUnitNumber());
+        }
+        if (request.getFloor() != null) {
+            unit.setFloor(request.getFloor());
+        }
+        if (request.getBedrooms() != null) {
+            unit.setBedrooms(request.getBedrooms());
+        }
+        if (request.getBathrooms() != null) {
+            unit.setBathrooms(request.getBathrooms());
+        }
+        if (request.getSqft() != null) {
+            unit.setSqft(request.getSqft());
+        }
+        if (request.getDescription() != null) {
+            unit.setDescription(request.getDescription());
+        }
+        if (request.getFeatures() != null) {
+            unit.setFeatures(new HashSet<>(request.getFeatures()));
+        }
+        if (request.getImages() != null) {
+            unit.setImages(request.getImages());
+        }
+        if (request.getStatus() != null) {
+            unit.setStatus(request.getStatus());
+        }
+        if (request.getUnitType() != null) {
+            unit.setUnitType(request.getUnitType());
+        }
+        if (request.getPrice() != null) {
+            unit.setPrice(request.getPrice());
+        }
+        if (request.getConstructionStage() != null) {
+            unit.setCurrentStage(request.getConstructionStage());
+        }
+        unit.setIsFeatured(request.isFeatured());
+
+        if (request.getReservedDate() != null) {
+            unit.setReservedDate(request.getReservedDate().atStartOfDay());
+        }
+        if (request.getSoldDate() != null) {
+            unit.setSoldDate(request.getSoldDate().atStartOfDay());
+        }
+    }
+
+    public List<UnitResponse> toResponseList(List<Unit> units) {
+        if (units == null) {
+            return null;
+        }
+        return units.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
 }

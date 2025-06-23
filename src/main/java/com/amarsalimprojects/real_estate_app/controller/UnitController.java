@@ -20,10 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amarsalimprojects.real_estate_app.dto.UnitDTO;
+import com.amarsalimprojects.real_estate_app.dto.requests.UnitRequest;
+import com.amarsalimprojects.real_estate_app.dto.responses.UnitResponse;
 import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
 import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
 import com.amarsalimprojects.real_estate_app.enums.UnitType;
+import com.amarsalimprojects.real_estate_app.mapper.UnitMapper;
 import com.amarsalimprojects.real_estate_app.model.Unit;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 import com.amarsalimprojects.real_estate_app.service.UnitService;
@@ -39,53 +41,83 @@ public class UnitController {
     @Autowired
     private UnitService unitService;
 
+    @Autowired
+    private UnitMapper unitMapper;
+
     // CREATE - Add a new unit
     @PostMapping
-    public ResponseEntity<Unit> createUnit(@RequestBody Unit unit) {
+    public ResponseEntity<UnitResponse> createUnit(@RequestBody UnitRequest request) {
         try {
-            // Check if unit number already exists
-            if (unit.getUnitNumber() != null && !unit.getUnitNumber().isEmpty()) {
-                Optional<Unit> existingUnit = unitRepository.findByUnitNumber(unit.getUnitNumber());
+            // Validate required fields
+            if (request.getProjectId() == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Check for duplicate unitNumber
+            if (request.getUnitNumber() != null && !request.getUnitNumber().isEmpty()) {
+                Optional<Unit> existingUnit = unitRepository.findByUnitNumber(request.getUnitNumber());
                 if (existingUnit.isPresent()) {
-                    return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
             }
 
-            // Set default values if not provided
-            if (unit.getStatus() == null) {
-                unit.setStatus(UnitStatus.AVAILABLE);
+            // Set defaults
+            if (request.getStatus() == null) {
+                request.setStatus(UnitStatus.AVAILABLE);
             }
-            if (unit.getCurrentStage() == null) {
-                unit.setCurrentStage(ConstructionStage.PLANNING);
+            if (request.getConstructionStage() == null) {
+                request.setConstructionStage(ConstructionStage.PLANNING);
+            }
+            if (request.getUnitType() == null) {
+                request.setUnitType(UnitType.APARTMENT);
+            }
+            if (request.getPrice() == null) {
+                request.setPrice(BigDecimal.ZERO);
+            }
+            if (request.getBedrooms() == null) {
+                request.setBedrooms(0);
+            }
+            if (request.getBathrooms() == null) {
+                request.setBathrooms(0);
+            }
+            if (request.getSqft() == null) {
+                request.setSqft(0);
+            }
+            if (request.getUnitNumber() == null || request.getUnitNumber().isEmpty()) {
+                request.setUnitNumber("UN" + System.currentTimeMillis());
             }
 
-            Unit savedUnit = unitRepository.save(unit);
-            return new ResponseEntity<>(savedUnit, HttpStatus.CREATED);
+            // Save unit
+            Unit savedUnit = unitService.addUnitToProject(request.getProjectId(), request);
+
+            // Map entity to response DTO
+            UnitResponse response = unitMapper.toResponse(savedUnit);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace(); // Debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // READ - Get all units as DTOs
+    // READ - Get all units as Response DTOs
     @GetMapping("/all")
-    public ResponseEntity<List<UnitDTO>> getAllUnits() {
+    public ResponseEntity<List<UnitResponse>> getAllUnits() {
         try {
             List<Unit> units = unitRepository.findAll();
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
 
-            List<UnitDTO> unitDTOs = units.stream()
-                    .map(unit -> new UnitDTO(unit))
-                    .collect(Collectors.toList());
-
-            return new ResponseEntity<>(unitDTOs, HttpStatus.OK);
+            List<UnitResponse> unitResponses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(unitResponses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // READ - Get all units (raw entities)
+    // READ - Get all units (raw entities) - Keep for backward compatibility
     @GetMapping
     public ResponseEntity<List<Unit>> getAllUnitsRaw() {
         try {
@@ -101,11 +133,12 @@ public class UnitController {
 
     // READ - Get unit by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Unit> getUnitById(@PathVariable("id") Long id) {
+    public ResponseEntity<UnitResponse> getUnitById(@PathVariable("id") Long id) {
         try {
             Optional<Unit> unit = unitRepository.findById(id);
             if (unit.isPresent()) {
-                return new ResponseEntity<>(unit.get(), HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(unit.get());
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -116,11 +149,12 @@ public class UnitController {
 
     // READ - Get unit by unit number
     @GetMapping("/unit-number/{unitNumber}")
-    public ResponseEntity<Unit> getUnitByUnitNumber(@PathVariable("unitNumber") String unitNumber) {
+    public ResponseEntity<UnitResponse> getUnitByUnitNumber(@PathVariable("unitNumber") String unitNumber) {
         try {
             Optional<Unit> unit = unitRepository.findByUnitNumber(unitNumber);
             if (unit.isPresent()) {
-                return new ResponseEntity<>(unit.get(), HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(unit.get());
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -131,13 +165,14 @@ public class UnitController {
 
     // READ - Get units by project ID
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<Unit>> getUnitsByProjectId(@PathVariable("projectId") Long projectId) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByProjectId(@PathVariable("projectId") Long projectId) {
         try {
             List<Unit> units = unitRepository.findByProjectId(projectId);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -145,13 +180,14 @@ public class UnitController {
 
     // READ - Get units by status
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Unit>> getUnitsByStatus(@PathVariable("status") UnitStatus status) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByStatus(@PathVariable("status") UnitStatus status) {
         try {
             List<Unit> units = unitRepository.findByStatus(status);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -159,13 +195,14 @@ public class UnitController {
 
     // READ - Get units by type
     @GetMapping("/type/{type}")
-    public ResponseEntity<List<Unit>> getUnitsByType(@PathVariable("type") UnitType type) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByType(@PathVariable("type") UnitType type) {
         try {
-            List<Unit> units = unitRepository.findByType(type);
+            List<Unit> units = unitRepository.findByUnitType(type);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -173,13 +210,14 @@ public class UnitController {
 
     // READ - Get units by floor
     @GetMapping("/floor/{floor}")
-    public ResponseEntity<List<Unit>> getUnitsByFloor(@PathVariable("floor") Integer floor) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByFloor(@PathVariable("floor") Integer floor) {
         try {
             List<Unit> units = unitRepository.findByFloor(floor);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -187,13 +225,14 @@ public class UnitController {
 
     // READ - Get units by bedrooms
     @GetMapping("/bedrooms/{bedrooms}")
-    public ResponseEntity<List<Unit>> getUnitsByBedrooms(@PathVariable("bedrooms") Integer bedrooms) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByBedrooms(@PathVariable("bedrooms") Integer bedrooms) {
         try {
             List<Unit> units = unitRepository.findByBedrooms(bedrooms);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -201,7 +240,7 @@ public class UnitController {
 
     // READ - Get units by price range
     @GetMapping("/price-range")
-    public ResponseEntity<List<Unit>> getUnitsByPriceRange(
+    public ResponseEntity<List<UnitResponse>> getUnitsByPriceRange(
             @RequestParam("minPrice") BigDecimal minPrice,
             @RequestParam("maxPrice") BigDecimal maxPrice) {
         try {
@@ -209,7 +248,8 @@ public class UnitController {
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -217,13 +257,14 @@ public class UnitController {
 
     // READ - Get units by buyer ID
     @GetMapping("/buyer/{buyerId}")
-    public ResponseEntity<List<Unit>> getUnitsByBuyerId(@PathVariable("buyerId") Long buyerId) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByBuyerId(@PathVariable("buyerId") Long buyerId) {
         try {
             List<Unit> units = unitRepository.findByBuyerId(buyerId);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -231,13 +272,14 @@ public class UnitController {
 
     // READ - Get featured units
     @GetMapping("/featured")
-    public ResponseEntity<List<Unit>> getFeaturedUnits() {
+    public ResponseEntity<List<UnitResponse>> getFeaturedUnits() {
         try {
             List<Unit> units = unitRepository.findByIsFeaturedTrue();
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -245,31 +287,15 @@ public class UnitController {
 
     // UPDATE - Update unit by ID
     @PutMapping("/{id}")
-    public ResponseEntity<Unit> updateUnit(@PathVariable("id") Long id, @RequestBody Unit unit) {
+    public ResponseEntity<UnitResponse> updateUnit(@PathVariable("id") Long id, @RequestBody UnitRequest request) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unitToUpdate = existingUnit.get();
-
-                // Update fields that exist in the model
-                unitToUpdate.setIsFeatured(unit.isFeatured());
-                unitToUpdate.setUnitNumber(unit.getUnitNumber());
-                unitToUpdate.setFloor(unit.getFloor());
-                unitToUpdate.setBedrooms(unit.getBedrooms());
-                unitToUpdate.setBathrooms(unit.getBathrooms());
-                unitToUpdate.setSqft(unit.getSqft());
-                unitToUpdate.setDescription(unit.getDescription());
-                unitToUpdate.setFeatures(unit.getFeatures());
-                unitToUpdate.setImages(unit.getImages());
-                unitToUpdate.setStatus(unit.getStatus());
-                unitToUpdate.setType(unit.getType());
-                unitToUpdate.setPrice(unit.getPrice());
-                unitToUpdate.setCurrentStage(unit.getCurrentStage());
-                unitToUpdate.setProject(unit.getProject());
-                unitToUpdate.setBuyer(unit.getBuyer());
-
+                unitMapper.updateEntityFromRequest(unitToUpdate, request);
                 Unit updatedUnit = unitRepository.save(unitToUpdate);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -280,55 +306,15 @@ public class UnitController {
 
     // UPDATE - Partial update of unit
     @PatchMapping("/{id}")
-    public ResponseEntity<Unit> partialUpdateUnit(@PathVariable("id") Long id, @RequestBody Unit unitUpdates) {
+    public ResponseEntity<UnitResponse> partialUpdateUnit(@PathVariable("id") Long id, @RequestBody UnitRequest request) {
         try {
             Optional<Unit> existingUnitOpt = unitRepository.findById(id);
             if (existingUnitOpt.isPresent()) {
                 Unit existingUnit = existingUnitOpt.get();
-
-                // Update only non-null fields
-                if (unitUpdates.getUnitNumber() != null) {
-                    existingUnit.setUnitNumber(unitUpdates.getUnitNumber());
-                }
-                if (unitUpdates.getFloor() != null) {
-                    existingUnit.setFloor(unitUpdates.getFloor());
-                }
-                if (unitUpdates.getType() != null) {
-                    existingUnit.setType(unitUpdates.getType());
-                }
-                if (unitUpdates.getBedrooms() != null) {
-                    existingUnit.setBedrooms(unitUpdates.getBedrooms());
-                }
-                if (unitUpdates.getBathrooms() != null) {
-                    existingUnit.setBathrooms(unitUpdates.getBathrooms());
-                }
-                if (unitUpdates.getSqft() != null) {
-                    existingUnit.setSqft(unitUpdates.getSqft());
-                }
-                if (unitUpdates.getPrice() != null) {
-                    existingUnit.setPrice(unitUpdates.getPrice());
-                }
-                if (unitUpdates.getStatus() != null) {
-                    existingUnit.setStatus(unitUpdates.getStatus());
-                }
-                if (unitUpdates.getDescription() != null) {
-                    existingUnit.setDescription(unitUpdates.getDescription());
-                }
-                if (unitUpdates.getFeatures() != null) {
-                    existingUnit.setFeatures(unitUpdates.getFeatures());
-                }
-                if (unitUpdates.getImages() != null) {
-                    existingUnit.setImages(unitUpdates.getImages());
-                }
-                if (unitUpdates.getCurrentStage() != null) {
-                    existingUnit.setCurrentStage(unitUpdates.getCurrentStage());
-                }
-                if (unitUpdates.getBuyer() != null) {
-                    existingUnit.setBuyer(unitUpdates.getBuyer());
-                }
-
+                unitMapper.updateEntityFromRequest(existingUnit, request);
                 Unit updatedUnit = unitRepository.save(existingUnit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -339,14 +325,15 @@ public class UnitController {
 
     // UPDATE - Update unit status
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Unit> updateUnitStatus(@PathVariable("id") Long id, @RequestParam("status") UnitStatus status) {
+    public ResponseEntity<UnitResponse> updateUnitStatus(@PathVariable("id") Long id, @RequestParam("status") UnitStatus status) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
                 unit.setStatus(status);
                 Unit updatedUnit = unitRepository.save(unit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -357,14 +344,15 @@ public class UnitController {
 
     // UPDATE - Update construction stage
     @PatchMapping("/{id}/construction-stage")
-    public ResponseEntity<Unit> updateConstructionStage(@PathVariable("id") Long id, @RequestParam("stage") ConstructionStage stage) {
+    public ResponseEntity<UnitResponse> updateConstructionStage(@PathVariable("id") Long id, @RequestParam("stage") ConstructionStage stage) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
                 unit.setCurrentStage(stage);
                 Unit updatedUnit = unitRepository.save(unit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -375,10 +363,11 @@ public class UnitController {
 
     // UPDATE - Assign buyer to unit
     @PatchMapping("/{id}/assign-buyer/{buyerId}")
-    public ResponseEntity<Unit> assignBuyerToUnit(@PathVariable("id") Long id, @PathVariable("buyerId") Long buyerId) {
+    public ResponseEntity<UnitResponse> assignBuyerToUnit(@PathVariable("id") Long id, @PathVariable("buyerId") Long buyerId) {
         try {
             Unit updatedUnit = unitService.assignBuyerToUnit(id, buyerId);
-            return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+            UnitResponse response = unitMapper.toResponse(updatedUnit);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -386,10 +375,11 @@ public class UnitController {
 
     // UPDATE - Remove buyer from unit
     @PatchMapping("/{id}/remove-buyer")
-    public ResponseEntity<Unit> removeBuyerFromUnit(@PathVariable("id") Long id) {
+    public ResponseEntity<UnitResponse> removeBuyerFromUnit(@PathVariable("id") Long id) {
         try {
             Unit updatedUnit = unitService.removeBuyerFromUnit(id);
-            return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+            UnitResponse response = unitMapper.toResponse(updatedUnit);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -397,14 +387,15 @@ public class UnitController {
 
     // UPDATE - Toggle featured status
     @PatchMapping("/{id}/toggle-featured")
-    public ResponseEntity<Unit> toggleFeaturedStatus(@PathVariable("id") Long id) {
+    public ResponseEntity<UnitResponse> toggleFeaturedStatus(@PathVariable("id") Long id) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
                 unit.setIsFeatured(!unit.isFeatured());
                 Unit updatedUnit = unitRepository.save(unit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -415,7 +406,7 @@ public class UnitController {
 
     // UPDATE - Add feature to unit
     @PatchMapping("/{id}/add-feature")
-    public ResponseEntity<Unit> addFeatureToUnit(@PathVariable("id") Long id, @RequestParam("feature") String feature) {
+    public ResponseEntity<UnitResponse> addFeatureToUnit(@PathVariable("id") Long id, @RequestParam("feature") String feature) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
@@ -424,7 +415,8 @@ public class UnitController {
                     unit.getFeatures().add(feature);
                 }
                 Unit updatedUnit = unitRepository.save(unit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -435,7 +427,7 @@ public class UnitController {
 
     // UPDATE - Remove feature from unit
     @PatchMapping("/{id}/remove-feature")
-    public ResponseEntity<Unit> removeFeatureFromUnit(@PathVariable("id") Long id, @RequestParam("feature") String feature) {
+    public ResponseEntity<UnitResponse> removeFeatureFromUnit(@PathVariable("id") Long id, @RequestParam("feature") String feature) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
@@ -444,7 +436,8 @@ public class UnitController {
                     unit.getFeatures().remove(feature);
                 }
                 Unit updatedUnit = unitRepository.save(unit);
-                return new ResponseEntity<>(updatedUnit, HttpStatus.OK);
+                UnitResponse response = unitMapper.toResponse(updatedUnit);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -521,13 +514,14 @@ public class UnitController {
 
     // GET - Get available units
     @GetMapping("/available")
-    public ResponseEntity<List<Unit>> getAvailableUnits() {
+    public ResponseEntity<List<UnitResponse>> getAvailableUnits() {
         try {
             List<Unit> units = unitRepository.findByStatus(UnitStatus.AVAILABLE);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -535,13 +529,14 @@ public class UnitController {
 
     // GET - Get sold units
     @GetMapping("/sold")
-    public ResponseEntity<List<Unit>> getSoldUnits() {
+    public ResponseEntity<List<UnitResponse>> getSoldUnits() {
         try {
             List<Unit> units = unitRepository.findByStatus(UnitStatus.SOLD);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -549,13 +544,14 @@ public class UnitController {
 
     // GET - Get reserved units
     @GetMapping("/reserved")
-    public ResponseEntity<List<Unit>> getReservedUnits() {
+    public ResponseEntity<List<UnitResponse>> getReservedUnits() {
         try {
             List<Unit> units = unitRepository.findByStatus(UnitStatus.RESERVED);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -563,7 +559,7 @@ public class UnitController {
 
     // GET - Search units by multiple criteria
     @GetMapping("/search")
-    public ResponseEntity<List<Unit>> searchUnits(
+    public ResponseEntity<List<UnitResponse>> searchUnits(
             @RequestParam(required = false) UnitType type,
             @RequestParam(required = false) Integer minBedrooms,
             @RequestParam(required = false) Integer maxBedrooms,
@@ -576,45 +572,31 @@ public class UnitController {
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    // GET - Get unit statistics for a project
 
-    // @GetMapping("/project/{projectId}/statistics")
-    // public ResponseEntity<UnitStatisticsDTO> getUnitStatisticsByProject(@PathVariable Long projectId) {
-    //     try {
-    //         UnitStatisticsDTO stats = UnitStatisticsDTO.builder()
-    //                 .totalUnits(unitRepository.findByProjectId(projectId).size())
-    //                 .availableUnits(unitService.getAvailableUnitsCountByProject(projectId))
-    //                 .soldUnits(unitService.getSoldUnitsCountByProject(projectId))
-    //                 .reservedUnits(unitService.getReservedUnitsCountByProject(projectId))
-    //                 .averagePrice(unitService.getAveragePriceByProject(projectId))
-    //                 .build();
-    //         return ResponseEntity.ok(stats);
-    //     } catch (Exception e) {
-    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-    //     }
-    // }
-// GET - Get units by construction stage
+    // GET - Get units by construction stage
     @GetMapping("/construction-stage/{stage}")
-    public ResponseEntity<List<Unit>> getUnitsByConstructionStage(@PathVariable ConstructionStage stage) {
+    public ResponseEntity<List<UnitResponse>> getUnitsByConstructionStage(@PathVariable ConstructionStage stage) {
         try {
             List<Unit> units = unitRepository.findByCurrentStage(stage);
             if (units.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            List<UnitResponse> responses = unitMapper.toResponseList(units);
+            return new ResponseEntity<>(responses, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-// PATCH - Bulk update unit status
+    // PATCH - Bulk update unit status
     @PatchMapping("/bulk-update-status")
-    public ResponseEntity<List<Unit>> bulkUpdateUnitStatus(
+    public ResponseEntity<List<UnitResponse>> bulkUpdateUnitStatus(
             @RequestParam List<Long> unitIds,
             @RequestParam UnitStatus status) {
         try {
@@ -626,15 +608,16 @@ public class UnitController {
                     .map(unitRepository::save)
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(updatedUnits);
+            List<UnitResponse> responses = unitMapper.toResponseList(updatedUnits);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-// GET - Get similar units (same type, similar price range)
+    // GET - Get similar units (same type, similar price range)
     @GetMapping("/{id}/similar")
-    public ResponseEntity<List<Unit>> getSimilarUnits(@PathVariable Long id) {
+    public ResponseEntity<List<UnitResponse>> getSimilarUnits(@PathVariable Long id) {
         try {
             Optional<Unit> unitOpt = unitRepository.findById(id);
             if (unitOpt.isPresent()) {
@@ -645,17 +628,17 @@ public class UnitController {
 
                 List<Unit> similarUnits = unitRepository.findAll().stream()
                         .filter(u -> !u.getId().equals(id))
-                        .filter(u -> u.getType() == unit.getType())
+                        .filter(u -> u.getUnitType() == unit.getUnitType())
                         .filter(u -> u.getPrice().compareTo(minPrice) >= 0 && u.getPrice().compareTo(maxPrice) <= 0)
                         .limit(5)
                         .collect(Collectors.toList());
 
-                return ResponseEntity.ok(similarUnits);
+                List<UnitResponse> responses = unitMapper.toResponseList(similarUnits);
+                return ResponseEntity.ok(responses);
             }
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 }
