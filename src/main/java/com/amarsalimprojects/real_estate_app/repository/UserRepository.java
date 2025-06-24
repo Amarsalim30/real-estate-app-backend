@@ -28,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByFirstNameAndLastName(String firstName, String lastName);
 
+    Optional<User> findByResetToken(String resetToken);
+
     // // Search methods (containing)
     List<User> findByUsernameContaining(String username);
 

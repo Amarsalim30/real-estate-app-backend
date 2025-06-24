@@ -2,7 +2,9 @@ package com.amarsalimprojects.real_estate_app.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,6 +27,7 @@ import com.amarsalimprojects.real_estate_app.dto.requests.UserStatistics;
 import com.amarsalimprojects.real_estate_app.enums.UserRole;
 import com.amarsalimprojects.real_estate_app.model.User;
 import com.amarsalimprojects.real_estate_app.repository.UserRepository;
+import com.amarsalimprojects.real_estate_app.service.EmailDispatcher;
 
 import jakarta.validation.Valid;
 
@@ -35,6 +38,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EmailDispatcher emailDispatcher;
 
     // // CREATE - Create a new user
     @PostMapping
@@ -1227,4 +1233,79 @@ public class UserController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.ok("If that email exists, a reset link has been sent.");
+        }
+
+        User user = userOpt.get();
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
+        userRepository.save(user);
+
+        String resetLink = "http://localhost:3000/reset-password?token=" + token;
+
+        String htmlBody = """
+        <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+            <p>Hi %s,</p>
+            <p>We received a request to reset your password.</p>
+            <p>
+                <a href="%s" 
+                   style="display: inline-block; padding: 12px 24px; background-color: #007bff; 
+                          color: white; text-decoration: none; border-radius: 6px;">
+                    Reset My Password
+                </a>
+            </p>
+            <p>This link will expire in 30 minutes.</p>
+            <p>If you didn’t request a password reset, you can safely ignore this email.</p>
+            <br/>
+            <p style="color: #888;">— Real Estate App Team</p>
+        </div>
+    """.formatted(user.getFirstName(), resetLink);
+
+        emailDispatcher.dispatchEmail(user.getEmail(), "Reset Your Password", htmlBody);
+        return ResponseEntity.ok("Password reset link sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("password");
+
+        if (token == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Token and password are required");
+        }
+
+        try {
+            Optional<User> userOpt = userRepository.findByResetToken(token);
+
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Invalid reset token");
+            }
+
+            User user = userOpt.get();
+
+            if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+                return ResponseEntity.badRequest().body("Reset token has expired");
+            }
+
+            // Hash the password before saving (you should use BCrypt or similar)
+            user.setPassword(newPassword); // TODO: Hash this password
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            userRepository.save(user);
+
+            return ResponseEntity.ok("Password reset successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error resetting password");
+        }
+    }
+
 }

@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "com.amarsalimprojects.sendgrid.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.sendgrid.api-key'"
+  },
+  {
+    "name": "com.amarsalimprojects.sendgrid.from-name",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.sendgrid.from-name'"
+  },  
+  {
+    "name": "com.amarsalimprojects.sendgrid.from-email",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.sendgrid.from-email'"
+  }
+]}

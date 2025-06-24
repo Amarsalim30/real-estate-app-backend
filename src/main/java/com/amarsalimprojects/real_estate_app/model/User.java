@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.amarsalimprojects.real_estate_app.enums.UserRole;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,7 +38,10 @@ public class User {
     @NotBlank(message = "Username is required")
     private String username;
 
+    @NotBlank(message = "First name is required")
     private String firstName;
+
+    @NotBlank(message = "Last name is required")
     private String lastName;
 
     @Email(message = "Invalid email format")
@@ -49,6 +53,12 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
