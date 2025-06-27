@@ -1,6 +1,7 @@
 package com.amarsalimprojects.real_estate_app.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.List;
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,6 +18,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -27,7 +31,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {
+    @Index(name = "idx_payment_buyer", columnList = "buyer_id"),
+    @Index(name = "idx_payment_invoice", columnList = "invoice_id"),
+    @Index(name = "idx_payment_status", columnList = "status"),
+    @Index(name = "idx_payment_date", columnList = "payment_date")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,39 +47,55 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private PaymentStatus status;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     private PaymentMethod method;
 
+    @Column(name = "payment_date", nullable = false)
+    private LocalDate paymentDate;
+
+    @Column(name = "reference_number", unique = true, length = 100)
+    private String referenceNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // FK to Invoice
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invoice_id", nullable = false)
-    private Invoice invoice;
-
-    // FK to BuyerProfile
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     private BuyerProfile buyer;
 
-    // 1:* relationship with PaymentDetails
-    @Builder.Default
-    @OneToMany(mappedBy = "payment")
-    private List<PaymentDetail> paymentDetails = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id", nullable = false)
+    private Invoice invoice;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
         createdAt = updatedAt = LocalDateTime.now();
+        if (paymentDate == null) {
+            paymentDate = LocalDate.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

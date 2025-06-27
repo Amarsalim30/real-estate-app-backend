@@ -10,14 +10,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ProcessPaymentRequest {
 
     private Long invoiceId;
     private Long buyerId;
     private BigDecimal amount;
     private PaymentMethod method;
+    private String referenceNumber;
     private String notes;
 }

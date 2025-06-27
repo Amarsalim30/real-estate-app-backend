@@ -154,7 +154,7 @@ public class UnitService {
         return units.stream()
                 .map(Unit::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(units.size()), BigDecimal.ROUND_HALF_UP);
+                .divide(BigDecimal.valueOf(units.size()), java.math.RoundingMode.HALF_UP);
     }
 
     public List<Unit> getUnitsInPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {

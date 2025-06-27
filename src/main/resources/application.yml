@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: real-estate-app
+  datasource:
+    url: jdbc:mysql://localhost:3306/realestateApp2
+    username: root
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  web:
+    resources:
+      add-mappings: true
+
+# app:
+#   upload:
+#     dir: UPLOAD_DIR:/path/to/default/uploads
+
+com:
+  amarsalimprojects:
+    sendgrid:
+      api-key: ${SENDGRID_API_KEY}
+      from-email: ${SENDGRID_FROM_EMAIL}
+      from-name: Real Estate App
+
+mpesa:
+  consumer-key: ${MPESA_CONSUMER_KEY}
+  consumer-secret: ${MPESA_CONSUMER_SECRET}
+  passkey: ${MPESA_PASSKEY}
+  shortcode: ${MPESA_SHORTCODE}
+  callback-url: https://yourdomain.com/api/payments/mpesa/callback
+  base-url: https://api.safaricom.co.ke
+  stk-push-url: /mpesa/stkpush/v1/processrequest
+  token-url: /oauth/v1/generate?grant_type=client_credentials
+
+logging:
+  level:
+    org.springframework: INFO
+    com.amarsalimprojects.real_estate_app.service.MpesaStkService: DEBUG
+    com.amarsalimprojects.real_estate_app.controller.MpesaController: DEBUG

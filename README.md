@@ -26,7 +26,7 @@ A comprehensive real estate management system with integrated M-Pesa payment pro
 
 - Java 17+
 - Maven 3.6+
-- PostgreSQL 12+
+- MySql 12+
 - Docker & Docker Compose (optional)
 
 ### Development Setup
@@ -126,7 +126,7 @@ The application provides comprehensive M-Pesa STK Push integration:
 # Database Configuration
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/real_estate_db
+    url: jdbc:MySql://localhost:5432/real_estate_db
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
 
@@ -144,7 +144,7 @@ mpesa:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection URL | Yes |
+| `DATABASE_URL` | MySql connection URL | Yes |
 | `DATABASE_USERNAME` | Database username | Yes |
 | `DATABASE_PASSWORD` | Database password | Yes |
 | `MPESA_CONSUMER_KEY` | M-Pesa API consumer key | Yes |
@@ -263,7 +263,7 @@ java -jar target/real-estate-app-0.0.1-SNAPSHOT.jar
 
 ### Production Considerations
 
-1. **Database**: Use managed PostgreSQL service (AWS RDS, Google Cloud SQL)
+1. **Database**: Use managed MySql service (AWS RDS, Google Cloud SQL)
 2. **Security**: Enable HTTPS and configure proper CORS policies
 3. **Monitoring**: Set up application monitoring (Prometheus, Grafana)
 4. **Logging**: Configure centralized logging (ELK Stack)
@@ -354,7 +354,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Review M-Pesa API documentation
 
 **Database Issues:**
-- Ensure PostgreSQL is running
+- Ensure MySql is running
 - Verify connection parameters
 - Check database permissions
 - Run Flyway migrations
@@ -395,4 +395,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with ❤️ by [Amar Salim](https://github.com/Amarsalim30)**
-```
+---

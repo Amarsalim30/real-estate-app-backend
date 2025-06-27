@@ -8,6 +8,8 @@ import java.util.List;
 
 import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -91,6 +93,27 @@ public class Invoice {
     public boolean isOverdue(Invoice invoice) {
         // Add due date logic if you extend the model
         return invoice.getStatus() == InvoiceStatus.OVERDUE;
+    }
+    // fields for Mpesa:
+
+    @Column(name = "checkout_request_id", length = 100)
+    private String checkoutRequestId; // Links STK push to invoice
+
+    @Builder.Default
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
+    private List<MpesaPayment> mpesaPayments = new ArrayList<>();
+
+// Add this method to check payment status
+    public boolean hasSuccessfulMpesaPayment() {
+        return mpesaPayments.stream()
+                .anyMatch(MpesaPayment::isSuccessful);
+    }
+
+    public BigDecimal getTotalMpesaPayments() {
+        return mpesaPayments.stream()
+                .filter(MpesaPayment::isSuccessful)
+                .map(MpesaPayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 }

@@ -3,6 +3,7 @@ package com.amarsalimprojects.real_estate_app.repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.model.MpesaPayment;
 import com.amarsalimprojects.real_estate_app.model.Payment;
 
 @Repository
@@ -49,4 +51,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT p FROM Payment p WHERE p.invoice.unit.project.id = :projectId")
     List<Payment> findByProjectId(@Param("projectId") Long projectId);
+
+    // Add method to find MpesaPayment by checkout request ID
+    @Query("SELECT mp FROM MpesaPayment mp WHERE mp.checkoutRequestId = :checkoutRequestId")
+    Optional<MpesaPayment> findByCheckoutRequestId(@Param("checkoutRequestId") String checkoutRequestId);
 }

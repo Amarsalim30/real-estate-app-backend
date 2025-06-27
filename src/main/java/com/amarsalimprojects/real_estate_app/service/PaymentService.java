@@ -1,5 +1,14 @@
 package com.amarsalimprojects.real_estate_app.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.amarsalimprojects.real_estate_app.dto.PaymentStatisticsDTO;
 import com.amarsalimprojects.real_estate_app.dto.PaymentSummaryDTO;
 import com.amarsalimprojects.real_estate_app.dto.ProcessPaymentRequest;
@@ -11,14 +20,6 @@ import com.amarsalimprojects.real_estate_app.model.Payment;
 import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
 import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
 import com.amarsalimprojects.real_estate_app.repository.PaymentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -96,7 +97,7 @@ public class PaymentService {
                 .completedPayments(completedPayments)
                 .pendingPayments(pendingPayments)
                 .failedPayments(failedPayments)
-                .totalAmountCollected(totalAmount != null ? totalAmount : BigDecimal.ZERO)
+                .totalAmount(totalAmount != null ? totalAmount : BigDecimal.ZERO)
                 .pendingAmount(pendingAmount != null ? pendingAmount : BigDecimal.ZERO)
                 .build();
     }
@@ -117,10 +118,9 @@ public class PaymentService {
 
             return PaymentSummaryDTO.builder()
                     .invoiceId(invoiceId)
-                    .invoiceAmount(invoice.getTotalAmount())
-                    .totalPaid(totalPaid)
+                    .totalInvoiceAmount(invoice.getTotalAmount())
+                    .totalPaidAmount(totalPaid)
                     .remainingAmount(remainingAmount)
-                    .paymentCount(payments.size())
                     .payments(payments)
                     .build();
         } else {

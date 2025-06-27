@@ -8,10 +8,139 @@
     "name": "com.amarsalimprojects.sendgrid.from-name",
     "type": "java.lang.String",
     "description": "A description for 'com.amarsalimprojects.sendgrid.from-name'"
-  },  
+  },
   {
     "name": "com.amarsalimprojects.sendgrid.from-email",
     "type": "java.lang.String",
     "description": "A description for 'com.amarsalimprojects.sendgrid.from-email'"
+  },
+  {
+    "name": "mpesa.consumer-secret",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.consumer-secret'"
+  },
+  {
+    "name": "mpesa.consumer-key",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.consumer-key'"
+  },
+  {
+    "name": "mpesa.webhook-secret",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.webhook-secret'"
+  },
+  {
+    "name": "mpesa.enable-signature-verification",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.enable-signature-verification'"
+  },
+  {
+    "name": "mpesa.retry-delay",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.retry-delay'"
+  },
+  {
+    "name": "mpesa.max-retries",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.max-retries'"
+  },
+  {
+    "name": "mpesa.read-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.read-timeout'"
+  },
+  {
+    "name": "mpesa.connection-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.connection-timeout'"
+  },
+  {
+    "name": "mpesa.base-url",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.base-url'"
+  },
+  {
+    "name": "mpesa.callback-url",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.callback-url'"
+  },
+  {
+    "name": "mpesa.shortcode",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.shortcode'"
+  },
+  {
+    "name": "mpesa.passkey",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.passkey'"
+  },
+  {
+    "name": "mpesa.passkey",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.passkey'"
+  },
+  {
+    "name": "com.amarsalimprojects.mpesa.consumer-key",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.consumer-key'"
+  },
+  {
+    "name": "app.upload.dir",
+    "type": "java.lang.String",
+    "description": "A description for 'app.upload.dir'"
+  },
+  {
+    "name": "com.amarsalimprojects.mpesa.connection-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.connection-timeout'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.base-url'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.callback-url'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.shortcode'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.passkey'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.consumer-secret'"
+  },
+  {
+    "name": "com.amarsalimprojects.sendgrid.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.sendgrid.api-key'"
+  },
+  {
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.mpesa.consumer-secret'"
+  },
+  {
+    "name": "app.upload.dir",
+    "type": "java.lang.String",
+    "description": "A description for 'app.upload.dir'"
+  },
+  {
+    "name": "mpesa.token-url",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.token-url'"
+  },
+  {
+    "name": "mpesa.consumer-key",
+    "type": "java.lang.String",
+    "description": "A description for 'mpesa.consumer-key'"
+  },
+  {
+    "name": "com.amarsalimprojects.sendgrid.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'com.amarsalimprojects.sendgrid.api-key'"
   }
 ]}

@@ -21,3 +21,14 @@ spring.web.resources.add-mappings=true
 com.amarsalimprojects.sendgrid.api-key=${SENDGRID_API_KEY}
 com.amarsalimprojects.sendgrid.from-email=${SENDGRID_FROM_EMAIL}
 com.amarsalimprojects.sendgrid.from-name=Real Estate App
+
+
+  mpesa.consumer-key: ${MPESA_CONSUMER_KEY}
+  mpesa.consumer-secret: ${MPESA_CONSUMER_SECRET}
+  mpesa.passkey: ${MPESA_PASSKEY}
+  mpesa.shortcode: ${MPESA_SHORTCODE}
+  mpesa.callback-url: https://yourdomain.com/api/payments/mpesa/callback
+  mpesa.base-url: https://api.safaricom.co.ke
+  mpesa.stk-push-url: /mpesa/stkpush/v1/processrequest
+  mpesa.token-url: /oauth/v1/generate?grant_type=client_credentials
+

@@ -34,3 +34,4 @@ build/
 sendgrid.env
 "sendgrid.env" 
 "sendgrid.env" 
+.env

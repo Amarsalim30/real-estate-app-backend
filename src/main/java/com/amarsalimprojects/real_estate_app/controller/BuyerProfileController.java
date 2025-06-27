@@ -1,15 +1,24 @@
 package com.amarsalimprojects.real_estate_app.controller;
 
-import com.amarsalimprojects.real_estate_app.model.BuyerProfile;
-import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Optional;
+import com.amarsalimprojects.real_estate_app.model.BuyerProfile;
+import com.amarsalimprojects.real_estate_app.repository.BuyerProfileRepository;
 
 @RestController
 @RequestMapping("/api/buyers")
@@ -80,20 +89,19 @@ public class BuyerProfileController {
         }
     }
 
-    // READ - Get buyers by county
-    @GetMapping("/county/{county}")
-    public ResponseEntity<List<BuyerProfile>> getBuyersByCounty(@PathVariable("county") String county) {
-        try {
-            List<BuyerProfile> buyers = buyerProfileRepository.findByCountyIgnoreCase(county);
-            if (buyers.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(buyers, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
+    // // READ - Get buyers by county
+    // @GetMapping("/county/{county}")
+    // public ResponseEntity<List<BuyerProfile>> getBuyersByCounty(@PathVariable("county") String county) {
+    //     try {
+    //         List<BuyerProfile> buyers = buyerProfileRepository.findByCountyIgnoreCase(county);
+    //         if (buyers.isEmpty()) {
+    //             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    //         }
+    //         return new ResponseEntity<>(buyers, HttpStatus.OK);
+    //     } catch (Exception e) {
+    //         return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
     // UPDATE - Update buyer by ID
     @PutMapping("/{id}")
     public ResponseEntity<BuyerProfile> updateBuyer(@PathVariable("id") Long id, @RequestBody BuyerProfile buyer) {
@@ -104,9 +112,9 @@ public class BuyerProfileController {
 
                 // Update fields that exist in the model
                 buyerToUpdate.setEmail(buyer.getEmail());
-                buyerToUpdate.setPhone(buyer.getPhone());
-                buyerToUpdate.setAddress(buyer.getAddress());
-                buyerToUpdate.setCounty(buyer.getCounty());
+                buyerToUpdate.setPhoneNumber(buyer.getPhoneNumber());
+                buyerToUpdate.setCity(buyer.getCity());
+                buyerToUpdate.setState(buyer.getState());
                 buyerToUpdate.setNationalId(buyer.getNationalId());
                 buyerToUpdate.setKraPin(buyer.getKraPin());
 
@@ -132,14 +140,14 @@ public class BuyerProfileController {
                 if (buyer.getEmail() != null) {
                     buyerToUpdate.setEmail(buyer.getEmail());
                 }
-                if (buyer.getPhone() != null) {
-                    buyerToUpdate.setPhone(buyer.getPhone());
+                if (buyer.getPhoneNumber() != null) {
+                    buyerToUpdate.setPhoneNumber(buyer.getPhoneNumber());
                 }
-                if (buyer.getAddress() != null) {
-                    buyerToUpdate.setAddress(buyer.getAddress());
+                if (buyer.getCity() != null) {
+                    buyerToUpdate.setCity(buyer.getCity());
                 }
-                if (buyer.getCounty() != null) {
-                    buyerToUpdate.setCounty(buyer.getCounty());
+                if (buyer.getState() != null) {
+                    buyerToUpdate.setState(buyer.getState());
                 }
                 if (buyer.getNationalId() != null) {
                     buyerToUpdate.setNationalId(buyer.getNationalId());

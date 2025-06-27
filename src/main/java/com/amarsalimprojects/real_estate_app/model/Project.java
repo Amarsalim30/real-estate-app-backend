@@ -43,8 +43,8 @@ public class Project {
     private String county;
     private String subCounty;
 
-// private Double latitude;
-// private Double longitude;
+    private Double latitude;
+    private Double longitude;
     @Enumerated(EnumType.STRING)
     private ProjectStatus status;
 

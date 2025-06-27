@@ -11,20 +11,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class PaymentSummaryDTO {
 
     private Long invoiceId;
-    private BigDecimal invoiceAmount;
-    private BigDecimal totalPaid;
+    private BigDecimal totalInvoiceAmount;
+    private BigDecimal totalPaidAmount;
     private BigDecimal remainingAmount;
-    private Integer paymentCount;
+    private Long numberOfPayments;
+    private boolean isFullyPaid;
     private List<Payment> payments;
-    private Boolean isFullyPaid;
-
-    public Boolean getIsFullyPaid() {
-        return remainingAmount != null && remainingAmount.compareTo(BigDecimal.ZERO) <= 0;
-    }
 }
