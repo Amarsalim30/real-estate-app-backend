@@ -44,6 +44,21 @@ public class BuyerProfileController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    // READ - Get buyer by user ID (NEW ENDPOINT)
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<BuyerProfile> getBuyerByUserId(@PathVariable("userId") Long userId) {
+        try {
+            Optional<BuyerProfile> buyer = buyerProfileRepository.findByUserId(userId);
+            if (buyer.isPresent()) {
+                return new ResponseEntity<>(buyer.get(), HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     // READ - Get all buyers
     @GetMapping

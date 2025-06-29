@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -51,12 +52,18 @@ public class Invoice {
     // FK to Unit (1:1)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id", nullable = false, unique = true)
+    @JsonManagedReference
     private Unit unit;
 
-    // FK to BuyerProfile
+    private LocalDate dueDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     private BuyerProfile buyer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_plan_id", nullable = false)
+    private PaymentPlan paymentPlan;
 
     // 1:* relationship with Payments
     @Builder.Default

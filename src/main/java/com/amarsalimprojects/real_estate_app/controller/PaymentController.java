@@ -27,7 +27,9 @@ import com.amarsalimprojects.real_estate_app.dto.PaymentStatisticsDTO;
 import com.amarsalimprojects.real_estate_app.dto.PaymentSummaryDTO;
 import com.amarsalimprojects.real_estate_app.dto.ProcessPaymentRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.PurchaseUnitRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.StkPushRequest;
+import com.amarsalimprojects.real_estate_app.dto.responses.PurchaseUnitResponse;
 import com.amarsalimprojects.real_estate_app.dto.responses.StkPushResponse;
 import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
@@ -41,6 +43,7 @@ import com.amarsalimprojects.real_estate_app.repository.PaymentRepository;
 import com.amarsalimprojects.real_estate_app.service.InvoiceService;
 import com.amarsalimprojects.real_estate_app.service.MpesaStkService;
 import com.amarsalimprojects.real_estate_app.service.PaymentService;
+import com.amarsalimprojects.real_estate_app.service.PurchaseService;
 
 import jakarta.validation.Valid;
 
@@ -48,6 +51,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/payments")
 @CrossOrigin(origins = "*")
 public class PaymentController {
+
+    @Autowired
+    private PurchaseService purchaseService;
 
     @Autowired
     private MpesaPaymentRepository mpesaPaymentRepository;
@@ -67,7 +73,6 @@ public class PaymentController {
     @Autowired
     private PaymentService paymentService;
 
-    // CREATE - Add a new payment
     @PostMapping
     public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
         try {
@@ -666,15 +671,22 @@ public class PaymentController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    // POST - Initiate M-Pesa STK Push
 
-    @PostMapping("/mpesa/buy-unit")
-    public ResponseEntity<?> initiateStkPush(@Valid
-            @RequestBody StkPushRequest request
+    @PostMapping("/unit/{unitId}/purchase")
+    public ResponseEntity<PurchaseUnitResponse> purchaseUnit(
+            @PathVariable Long unitId,
+            @RequestBody PurchaseUnitRequest dto
     ) {
+        PurchaseUnitResponse response = purchaseService.handlePurchase(unitId, dto);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/mpesa-stk/unit/{unitId}/purchase")
+    public ResponseEntity<?> initiateStkPush(@Valid
+            @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
         try {
             // Validate phone number format (Kenyan format)
-            if (!isValidKenyanPhoneNumber(request.getPhoneNumber())) {
+            if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "success", false,
@@ -683,7 +695,7 @@ public class PaymentController {
             }
 
             // Validate amount
-            if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ONE) < 0) {
+            if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "success", false,
@@ -692,7 +704,7 @@ public class PaymentController {
             }
             Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(), request.getBuyerId());
             request.setInvoiceId(invoice.getId());
-            StkPushResponse response = mpesaStkService.initiateStkPush(request.getPhoneNumber(), request.getAmount(), request.getInvoiceId());
+            StkPushResponse response = mpesaStkService.initiateStkPush(request.getMpesaNumber(), request.getTotalAmount(), request.getInvoiceId());
 
             return ResponseEntity.ok(response);
 

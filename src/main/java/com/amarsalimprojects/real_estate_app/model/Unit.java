@@ -84,6 +84,7 @@ public class Unit {
 
     // 1:1 relationship with Invoice
     @OneToOne(mappedBy = "unit")
+    @JsonBackReference
     private Invoice invoice;
 
     @PreUpdate

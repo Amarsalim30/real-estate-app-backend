@@ -13,6 +13,8 @@ public interface BuyerProfileRepository extends JpaRepository<BuyerProfile, Long
 
     Optional<BuyerProfile> findByEmail(String email);
 
+    Optional<BuyerProfile> findByUserId(Long userId);
+
     // List<BuyerProfile> findByCountyIgnoreCase(String county);
     Optional<BuyerProfile> findByNationalId(String nationalId);
 

@@ -25,7 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "buyer_profiles")
+@Table(name = "buyer_profile")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,6 +56,8 @@ public class BuyerProfile {
     private String nationalId;
 
     private String kraPin;
+
+    private String postalCode;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

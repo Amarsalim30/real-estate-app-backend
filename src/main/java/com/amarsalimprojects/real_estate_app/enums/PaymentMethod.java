@@ -8,6 +8,7 @@ public enum PaymentMethod {
     MOBILE_MONEY,
     ONLINE_PAYMENT,
     CHECK,
-    MPESA,
+    MPESA_STKPUSH,
+    MPESA_PAYBILL,
     PAYPAL
 }

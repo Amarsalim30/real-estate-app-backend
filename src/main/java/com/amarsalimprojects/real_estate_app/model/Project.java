@@ -60,6 +60,7 @@ public class Project {
     //selling points
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
+    private BigDecimal DownPaymentPercentage;
     @ElementCollection
     private List<String> images;
 

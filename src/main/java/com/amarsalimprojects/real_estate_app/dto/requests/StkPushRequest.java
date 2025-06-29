@@ -7,8 +7,9 @@ import lombok.Data;
 @Data
 public class StkPushRequest {
 
-    private String phoneNumber;
-    private BigDecimal amount;
+    private String mpesaNumber;
+    private BigDecimal totalAmount;
+    private BigDecimal downPaymentAmount;
     private Long invoiceId;
     private Long unitId;
     private Long buyerId;
