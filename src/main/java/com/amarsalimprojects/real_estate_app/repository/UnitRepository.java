@@ -35,7 +35,10 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
 
     List<Unit> findByBuyerId(Long buyerId);
 
-    List<Unit> findByIsFeaturedTrue();
+    // Fix: Change from findByIsFeaturedTrue to findByFeaturedTrue
+    List<Unit> findByFeaturedTrue();
+
+    List<Unit> findByFeaturedFalse();
 
     List<Unit> findByCurrentStage(ConstructionStage stage);
 
@@ -56,4 +59,16 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
 
     @Query("SELECT u FROM Unit u WHERE u.buyer IS NOT NULL")
     List<Unit> findUnitsWithBuyer();
+
+    // Additional useful queries
+    @Query("SELECT u FROM Unit u WHERE u.project.id = :projectId AND u.unitType = :unitType")
+    List<Unit> findByProjectIdAndUnitType(@Param("projectId") Long projectId, @Param("unitType") UnitType unitType);
+
+    @Query("SELECT COUNT(u) FROM Unit u WHERE u.project.id = :projectId")
+    Long countByProjectId(@Param("projectId") Long projectId);
+
+    @Query("SELECT u FROM Unit u WHERE u.price <= :maxPrice AND u.status = 'AVAILABLE'")
+    List<Unit> findAvailableUnitsUnderPrice(@Param("maxPrice") BigDecimal maxPrice);
+
+    boolean existsByUnitNumber(String unitNumber);
 }

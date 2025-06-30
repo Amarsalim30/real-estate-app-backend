@@ -1,5 +1,6 @@
 package com.amarsalimprojects.real_estate_app.mapper;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,6 +50,8 @@ public class UnitMapper {
             return null;
         }
 
+        validateUnitRequest(request);
+
         return Unit.builder()
                 .unitNumber(request.getUnitNumber())
                 .floor(request.getFloor())
@@ -56,13 +59,13 @@ public class UnitMapper {
                 .bathrooms(request.getBathrooms())
                 .sqft(request.getSqft())
                 .description(request.getDescription())
-                .features(request.getFeatures() != null ? new HashSet<>(request.getFeatures()) : null)
+                .features(request.getFeatures() != null ? new HashSet<>(request.getFeatures()) : new HashSet<>())
                 .images(request.getImages())
                 .status(request.getStatus())
                 .unitType(request.getUnitType())
                 .price(request.getPrice())
                 .currentStage(request.getConstructionStage())
-                .isFeatured(request.isFeatured())
+                .featured(request.isFeatured())
                 .reservedDate(request.getReservedDate() != null ? request.getReservedDate().atStartOfDay() : null)
                 .soldDate(request.getSoldDate() != null ? request.getSoldDate().atStartOfDay() : null)
                 .build();
@@ -72,6 +75,8 @@ public class UnitMapper {
         if (unit == null || request == null) {
             return;
         }
+
+        validateUnitRequest(request);
 
         if (request.getUnitNumber() != null) {
             unit.setUnitNumber(request.getUnitNumber());
@@ -109,8 +114,11 @@ public class UnitMapper {
         if (request.getConstructionStage() != null) {
             unit.setCurrentStage(request.getConstructionStage());
         }
-        unit.setIsFeatured(request.isFeatured());
 
+        // Fix: Use setFeatured instead of setIsFeatured
+        unit.setFeatured(request.isFeatured());
+
+        // Fix: Handle null values for dates
         if (request.getReservedDate() != null) {
             unit.setReservedDate(request.getReservedDate().atStartOfDay());
         }
@@ -121,10 +129,25 @@ public class UnitMapper {
 
     public List<UnitResponse> toResponseList(List<Unit> units) {
         if (units == null) {
-            return null;
+            return List.of(); // Return empty list instead of null
         }
         return units.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void validateUnitRequest(UnitRequest request) {
+        if (request.getBedrooms() != null && request.getBedrooms() < 0) {
+            throw new IllegalArgumentException("Bedrooms cannot be negative");
+        }
+        if (request.getBathrooms() != null && request.getBathrooms() < 0) {
+            throw new IllegalArgumentException("Bathrooms cannot be negative");
+        }
+        if (request.getSqft() != null && request.getSqft() <= 0) {
+            throw new IllegalArgumentException("Square footage must be positive");
+        }
+        if (request.getPrice() != null && request.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Price cannot be negative");
+        }
     }
 }

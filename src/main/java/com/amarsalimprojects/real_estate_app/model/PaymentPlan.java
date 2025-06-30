@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,7 +55,8 @@ public class PaymentPlan {
     @ElementCollection
     @CollectionTable(name = "payment_plan_benefits", joinColumns = @JoinColumn(name = "payment_plan_id"))
     @Column(name = "benefit")
-    private List<String> benefits;
+    @Builder.Default
+    private List<String> benefits = new ArrayList<>();
 
     @Column(name = "terms_and_conditions", columnDefinition = "TEXT")
     private String termsAndConditions;
@@ -65,6 +68,7 @@ public class PaymentPlan {
     private BigDecimal earlyPaymentDiscount = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "paymentPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<Invoice> invoices = new ArrayList<>();
 
     @CreationTimestamp
