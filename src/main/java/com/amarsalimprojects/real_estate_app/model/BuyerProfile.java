@@ -9,6 +9,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -91,7 +92,8 @@ public class BuyerProfile {
 
     @Builder.Default
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference(value = "buyer-invoices")
+    // @JsonManagedReference(value = "buyer-invoices")
+    @JsonIgnore
     private List<Invoice> invoices = new ArrayList<>();
 
     @Builder.Default

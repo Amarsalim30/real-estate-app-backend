@@ -31,7 +31,7 @@ public class MpesaConfig {
     private String stkPushUrl = "/mpesa/stkpush/v1/processrequest";
 
     @NotBlank(message = "M-Pesa callback URL is required")
-    private String callbackUrl = "https://6d54-102-140-233-133.ngrok-free.app/payments/mpesa/callback";
+    private String callbackUrl = "https://6d54-102-140-233-133.ngrok-free.app/api/payments/mpesa/callback";
 
     private String tokenUrl = "/oauth/v1/generate?grant_type=client_credentials";
 

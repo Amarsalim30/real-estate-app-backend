@@ -61,7 +61,7 @@ public class MpesaStkService {
         body.put("PartyB", config.getShortcode());
         body.put("PhoneNumber", phone);
         body.put("CallBackURL", config.getCallbackUrl());
-        body.put("AccountReference", "AMAR");//+ invoiceId
+        body.put("AccountReference", "INV-" + invoiceId);
         body.put("TransactionDesc", "INV payment");
 
         HttpHeaders headers = new HttpHeaders();

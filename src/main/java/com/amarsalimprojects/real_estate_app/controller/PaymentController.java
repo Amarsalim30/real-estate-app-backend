@@ -669,6 +669,7 @@ public class PaymentController {
         }
     }
 
+    //1
     @PostMapping("/unit/{unitId}/purchase")
     public ResponseEntity<?> purchaseUnit(
             @PathVariable Long unitId,
@@ -832,8 +833,7 @@ public class PaymentController {
         return cleanNumber.matches("^254[17]\\d{8}$");
     }
 
-    // Fixed M-Pesa callback handler
-    // Fixed M-Pesa callback handler
+    //2
     @PostMapping("/mpesa/callback")
     public ResponseEntity<?> handleCallback(@RequestBody MpesaCallbackRequest request) {
         try {
