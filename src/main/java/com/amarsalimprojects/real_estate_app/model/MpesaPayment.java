@@ -3,6 +3,8 @@ package com.amarsalimprojects.real_estate_app.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -86,10 +88,12 @@ public class MpesaPayment {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id")
+    @JsonBackReference(value = "buyer-mpesa-payments")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
+    @JsonBackReference(value = "invoice-mpesa-payments")
     private Invoice invoice;
 
     @OneToOne(fetch = FetchType.LAZY)

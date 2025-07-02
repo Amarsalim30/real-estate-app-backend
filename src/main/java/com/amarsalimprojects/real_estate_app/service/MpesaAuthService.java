@@ -47,10 +47,14 @@ public class MpesaAuthService {
         if (response.getStatusCode().is2xxSuccessful()) {
             Map body = response.getBody();
             token = (String) body.get("access_token");
-            Integer expiresIn = (Integer) body.get("expires_in");
+
+            Object expiresInRaw = body.get("expires_in");
+            int expiresIn = Integer.parseInt(expiresInRaw.toString());
+
             expiry = Instant.now().plusSeconds(expiresIn - 60);
             return token;
         }
+
         throw new RuntimeException("Failed to get access token");
     }
 }

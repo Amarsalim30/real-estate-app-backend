@@ -3,11 +3,12 @@ package com.amarsalimprojects.real_estate_app.dto.responses;
 import java.math.BigDecimal;
 
 import lombok.Builder;
+import lombok.Data;
 
 @Builder
+@Data
 public class PurchaseUnitResponse {
 
-    private Long purchaseId; // optional if you have a Purchase entity
     private Long invoiceId;
     private Long unitId;
     private Long buyerId;

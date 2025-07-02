@@ -54,17 +54,17 @@ public class PaymentDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value="buyer-payment-details")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value="invoice-payment-details")
     private Invoice invoice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value="payment-payment-details")
     private Payment payment;
 
     @Embedded

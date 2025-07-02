@@ -70,7 +70,7 @@ public class User {
 
     // 1:1 relationship with BuyerProfile
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-user")
     private BuyerProfile buyerProfile;
 
 }

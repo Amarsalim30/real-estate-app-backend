@@ -1,26 +1,17 @@
 package com.amarsalimprojects.real_estate_app.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.client.RestTemplate;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
-@Component
 @ConfigurationProperties(prefix = "mpesa")
 @Validated
 @Getter
 @Setter
 public class MpesaConfig {
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 
     @NotBlank(message = "M-Pesa consumer key is required")
     private String consumerKey;
@@ -40,7 +31,7 @@ public class MpesaConfig {
     private String stkPushUrl = "/mpesa/stkpush/v1/processrequest";
 
     @NotBlank(message = "M-Pesa callback URL is required")
-    private String callbackUrl = "https://e99d-102-140-233-133.ngrok-free.app/api/payments/mpesa/callback";
+    private String callbackUrl = "https://6d54-102-140-233-133.ngrok-free.app/payments/mpesa/callback";
 
     private String tokenUrl = "/oauth/v1/generate?grant_type=client_credentials";
 

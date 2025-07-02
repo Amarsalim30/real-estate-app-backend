@@ -60,27 +60,27 @@ public class Invoice {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "buyer-invoices")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_plan_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "payment-plan-invoices")
     private PaymentPlan paymentPlan;
 
     @Builder.Default
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "invoice-payments")
     private List<Payment> payments = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "invoice-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "invoice-mpesa-payments")
     private List<MpesaPayment> mpesaPayments = new ArrayList<>();
 
     @Column(name = "checkout_request_id", length = 100)

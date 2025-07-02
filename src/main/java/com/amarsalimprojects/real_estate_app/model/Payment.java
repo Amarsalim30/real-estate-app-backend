@@ -78,17 +78,17 @@ public class Payment {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "buyer-payments")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "invoice-payments")
     private Invoice invoice;
 
     @Builder.Default
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "payment-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     @PrePersist

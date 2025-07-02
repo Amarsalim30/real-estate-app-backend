@@ -77,31 +77,31 @@ public class BuyerProfile {
     // Relationships
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonBackReference
+    @JsonBackReference(value = "buyer-user")
     private User user;
 
     @OneToMany(mappedBy = "buyer")
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-units")
     private List<Unit> unit;
 
     @Builder.Default
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-payments")
     private List<Payment> payments = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-invoices")
     private List<Invoice> invoices = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-mpesa-payments")
     private List<MpesaPayment> mpesaPayments = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference(value = "buyer-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     // Convenience methods

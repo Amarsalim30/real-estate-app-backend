@@ -73,7 +73,7 @@ public class Project {
     // 1:* relationship with Units
     @Builder.Default
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "project-units")
     private List<Unit> units = new ArrayList<>();
 
     public void addUnit(Unit unit) {

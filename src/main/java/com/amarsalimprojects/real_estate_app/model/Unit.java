@@ -84,16 +84,16 @@ public class Unit {
     // Relationships:
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "project-units")
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id")
-    @JsonBackReference
+    @JsonBackReference(value = "buyer-units")
     private BuyerProfile buyer;
 
     @OneToOne(mappedBy = "unit", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference
+    @JsonBackReference(value = "unit-invoice")
     private Invoice invoice;
 
     // Optional: Setter to handle boolean naming

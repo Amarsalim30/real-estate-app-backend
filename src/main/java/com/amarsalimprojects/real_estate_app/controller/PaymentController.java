@@ -28,13 +28,9 @@ import com.amarsalimprojects.real_estate_app.dto.PaymentSummaryDTO;
 import com.amarsalimprojects.real_estate_app.dto.ProcessPaymentRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.PurchaseUnitRequest;
-import com.amarsalimprojects.real_estate_app.dto.requests.StkPushRequest;
 import com.amarsalimprojects.real_estate_app.dto.responses.PurchaseUnitResponse;
-import com.amarsalimprojects.real_estate_app.dto.responses.StkPushResponse;
-import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
-import com.amarsalimprojects.real_estate_app.model.Invoice;
 import com.amarsalimprojects.real_estate_app.model.MpesaPayment;
 import com.amarsalimprojects.real_estate_app.model.Payment;
 import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
@@ -45,6 +41,7 @@ import com.amarsalimprojects.real_estate_app.service.MpesaStkService;
 import com.amarsalimprojects.real_estate_app.service.PaymentService;
 import com.amarsalimprojects.real_estate_app.service.PurchaseService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -673,42 +670,31 @@ public class PaymentController {
     }
 
     @PostMapping("/unit/{unitId}/purchase")
-    public ResponseEntity<PurchaseUnitResponse> purchaseUnit(
+    public ResponseEntity<?> purchaseUnit(
             @PathVariable Long unitId,
-            @RequestBody PurchaseUnitRequest dto
+            @Valid @RequestBody PurchaseUnitRequest dto
     ) {
-        PurchaseUnitResponse response = purchaseService.handlePurchase(unitId, dto);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/mpesa-stk/unit/{unitId}/purchase")
-    public ResponseEntity<?> initiateStkPush(@Valid
-            @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
         try {
-            // Validate phone number format (Kenyan format)
-            if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
+            // Validate M-Pesa number is provided for STK Push
+            if ("MPESA_STKPUSH".equals(dto.getPaymentMethod())
+                    && (dto.getMpesaNumber() == null || dto.getMpesaNumber().trim().isEmpty())) {
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "success", false,
-                                "message", "Invalid phone number format. Use format: 254XXXXXXXXX"
+                                "message", "M-Pesa number is required for STK Push payments"
                         ));
             }
 
-            // Validate amount
-            if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of(
-                                "success", false,
-                                "message", "Amount must be greater than 0"
-                        ));
-            }
-            Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(), request.getBuyerId());
-            request.setInvoiceId(invoice.getId());
-            StkPushResponse response = mpesaStkService.initiateStkPush(request.getMpesaNumber(), request.getTotalAmount(), request.getInvoiceId());
-
+            PurchaseUnitResponse response = purchaseService.handlePurchase(unitId, dto);
             return ResponseEntity.ok(response);
 
-        } catch (RuntimeException e) {
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
+        } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(
                             "success", false,
@@ -718,11 +704,49 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(
                             "success", false,
-                            "message", "Failed to initiate payment: " + e.getMessage()
+                            "message", "Failed to process purchase: " + e.getMessage()
                     ));
         }
     }
 
+    // @PostMapping("/mpesa-stk/unit/{unitId}/purchase")
+    // public ResponseEntity<?> initiateStkPush(@Valid
+    //         @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
+    //     try {
+    //         // Validate phone number format (Kenyan format)
+    //         if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Map.of(
+    //                             "success", false,
+    //                             "message", "Invalid phone number format. Use format: 254XXXXXXXXX"
+    //                     ));
+    //         }
+    //         // Validate amount
+    //         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Map.of(
+    //                             "success", false,
+    //                             "message", "Amount must be greater than 0"
+    //                     ));
+    //         }
+    //         Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(), request.getBuyerId());
+    //         request.setInvoiceId(invoice.getId());
+    //         StkPushResponse response = mpesaStkService.initiateStkPush(request.getMpesaNumber(), request.getTotalAmount(), request.getInvoiceId());
+    //         return ResponseEntity.ok(response);
+    //     } catch (RuntimeException e) {
+    //         return ResponseEntity.badRequest()
+    //                 .body(Map.of(
+    //                         "success", false,
+    //                         "message", e.getMessage()
+    //                 ));
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(Map.of(
+    //                         "success", false,
+    //                         "message", "Failed to initiate payment: " + e.getMessage()
+    //                 ));
+    //     }
+    // }
     // GET - Check STK Push status
     @GetMapping("/mpesa/status/{checkoutRequestId}")
     public ResponseEntity<?> checkStkPushStatus(@PathVariable("checkoutRequestId") String checkoutRequestId
@@ -809,6 +833,7 @@ public class PaymentController {
     }
 
     // Fixed M-Pesa callback handler
+    // Fixed M-Pesa callback handler
     @PostMapping("/mpesa/callback")
     public ResponseEntity<?> handleCallback(@RequestBody MpesaCallbackRequest request) {
         try {
@@ -863,16 +888,16 @@ public class PaymentController {
                     }
                 }
 
-                // Update invoice status if fully paid
-                Invoice invoice = payment.getInvoice();
-                if (invoice != null && invoice.getTotalMpesaPayments().compareTo(invoice.getTotalAmount()) >= 0) {
-                    invoice.setStatus(InvoiceStatus.PAID);
-                    invoiceRepository.save(invoice);
-                }
-            }
+                // Save the updated payment first
+                mpesaPaymentRepository.save(payment);
 
-            // Save the updated payment
-            mpesaPaymentRepository.save(payment);
+                // 🔹 NEW: Handle successful payment using PurchaseService
+                purchaseService.handleSuccessfulPayment(checkoutRequestId);
+
+            } else {
+                // Save failed payment
+                mpesaPaymentRepository.save(payment);
+            }
 
             return ResponseEntity.ok(Map.of("ResultCode", 0, "ResultDesc", "Success"));
 

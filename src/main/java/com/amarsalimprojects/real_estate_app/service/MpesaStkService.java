@@ -54,12 +54,12 @@ public class MpesaStkService {
         body.put("Timestamp", timestamp);
         body.put("TransactionType", "CustomerPayBillOnline");
         body.put("Amount", amount.intValue());
-        body.put("PartyA", config.getPhoneNumberSender());
+        body.put("PartyA", phone);
         body.put("PartyB", config.getShortcode());
         body.put("PhoneNumber", phone);
         body.put("CallBackURL", config.getCallbackUrl());
-        body.put("AccountReference", "INV-" + invoiceId);
-        body.put("TransactionDesc", "Invoice payment");
+        body.put("AccountReference", "AMAR");//+ invoiceId
+        body.put("TransactionDesc", "INV payment");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -68,7 +69,7 @@ public class PaymentPlan {
     private BigDecimal earlyPaymentDiscount = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "paymentPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonBackReference
+    @JsonManagedReference(value = "payment-plan-invoices")
     private List<Invoice> invoices = new ArrayList<>();
 
     @CreationTimestamp
