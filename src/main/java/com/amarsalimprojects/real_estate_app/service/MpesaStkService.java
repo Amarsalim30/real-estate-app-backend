@@ -30,6 +30,8 @@ public class MpesaStkService {
     private final MpesaPaymentRepository mpesaPaymentRepository;
     private final InvoiceRepository invoiceRepository;
 
+    BigDecimal testAmount = new BigDecimal("1.00");
+
     public MpesaStkService(MpesaConfig config, MpesaAuthService authService,
             RestTemplate restTemplate, MpesaPaymentRepository mpesaPaymentRepository,
             InvoiceRepository invoiceRepository) {
@@ -38,6 +40,7 @@ public class MpesaStkService {
         this.restTemplate = restTemplate;
         this.mpesaPaymentRepository = mpesaPaymentRepository;
         this.invoiceRepository = invoiceRepository;
+
     }
 
     public StkPushResponse initiateStkPush(String phone, BigDecimal amount, Long invoiceId) {
@@ -53,7 +56,7 @@ public class MpesaStkService {
         body.put("Password", password);
         body.put("Timestamp", timestamp);
         body.put("TransactionType", "CustomerPayBillOnline");
-        body.put("Amount", amount.intValue());
+        body.put("Amount", testAmount.intValue());
         body.put("PartyA", phone);
         body.put("PartyB", config.getShortcode());
         body.put("PhoneNumber", phone);
