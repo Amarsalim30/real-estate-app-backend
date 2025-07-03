@@ -7,7 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -42,6 +47,7 @@ public class Invoice {
 
     private BigDecimal totalAmount;
     private LocalDate issuedDate;
+    private LocalDate dueDate;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -49,48 +55,72 @@ public class Invoice {
     // FK to Unit (1:1)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id", nullable = false, unique = true)
+    @JsonIgnore
     private Unit unit;
 
-    // FK to BuyerProfile
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
+    @JsonBackReference(value = "buyer-invoices")
     private BuyerProfile buyer;
 
-    // 1:* relationship with Payments
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_plan_id", nullable = false)
+    @JsonBackReference(value = "payment-plan-invoices")
+    private PaymentPlan paymentPlan;
+
     @Builder.Default
-    @OneToMany(mappedBy = "invoice")
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "invoice-payments")
     private List<Payment> payments = new ArrayList<>();
 
-    // 1:* relationship with PaymentDetails
     @Builder.Default
-    @OneToMany(mappedBy = "invoice")
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "invoice-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "invoice-mpesa-payments")
+    private List<MpesaPayment> mpesaPayments = new ArrayList<>();
+
+    @Column(name = "checkout_request_id", length = 100)
+    private String checkoutRequestId;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = updatedAt = LocalDateTime.now();
+    }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
-    }
-    // In Invoice model or service
-
-    public BigDecimal getRemainingAmount(Invoice invoice) {
-        BigDecimal totalPaid = invoice.getPayments().stream()
+    // Business Logic Methods (Now using this, not parameterized)
+    public BigDecimal getRemainingAmount() {
+        BigDecimal totalPaid = this.payments.stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return invoice.getTotalAmount().subtract(totalPaid);
+        return this.totalAmount.subtract(totalPaid);
     }
 
-    public boolean isFullyPaid(Invoice invoice) {
-        return getRemainingAmount(invoice).compareTo(BigDecimal.ZERO) <= 0;
+    public boolean isFullyPaid() {
+        return getRemainingAmount().compareTo(BigDecimal.ZERO) <= 0;
     }
 
-    public boolean isOverdue(Invoice invoice) {
-        // Add due date logic if you extend the model
-        return invoice.getStatus() == InvoiceStatus.OVERDUE;
+    public boolean isOverdue() {
+        return this.status == InvoiceStatus.OVERDUE;
     }
 
+    public boolean hasSuccessfulMpesaPayment() {
+        return this.mpesaPayments.stream()
+                .anyMatch(MpesaPayment::isSuccessful);
+    }
+
+    public BigDecimal getTotalMpesaPayments() {
+        return this.mpesaPayments.stream()
+                .filter(MpesaPayment::isSuccessful)
+                .map(MpesaPayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }

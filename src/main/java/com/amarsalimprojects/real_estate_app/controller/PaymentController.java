@@ -2,7 +2,9 @@ package com.amarsalimprojects.real_estate_app.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +26,23 @@ import org.springframework.web.bind.annotation.RestController;
 import com.amarsalimprojects.real_estate_app.dto.PaymentStatisticsDTO;
 import com.amarsalimprojects.real_estate_app.dto.PaymentSummaryDTO;
 import com.amarsalimprojects.real_estate_app.dto.ProcessPaymentRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.PurchaseUnitRequest;
+import com.amarsalimprojects.real_estate_app.dto.responses.PurchaseUnitResponse;
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
+import com.amarsalimprojects.real_estate_app.model.MpesaPayment;
 import com.amarsalimprojects.real_estate_app.model.Payment;
+import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
+import com.amarsalimprojects.real_estate_app.repository.MpesaPaymentRepository;
 import com.amarsalimprojects.real_estate_app.repository.PaymentRepository;
+import com.amarsalimprojects.real_estate_app.service.InvoiceService;
+import com.amarsalimprojects.real_estate_app.service.MpesaStkService;
 import com.amarsalimprojects.real_estate_app.service.PaymentService;
+import com.amarsalimprojects.real_estate_app.service.PurchaseService;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -36,12 +50,26 @@ import com.amarsalimprojects.real_estate_app.service.PaymentService;
 public class PaymentController {
 
     @Autowired
+    private PurchaseService purchaseService;
+
+    @Autowired
+    private MpesaPaymentRepository mpesaPaymentRepository;
+
+    @Autowired
+    private MpesaStkService mpesaStkService;
+
+    @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private InvoiceService invoiceService;
 
     @Autowired
     private PaymentService paymentService;
 
-    // CREATE - Add a new payment
     @PostMapping
     public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
         try {
@@ -638,6 +666,244 @@ public class PaymentController {
             }
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //1
+    @PostMapping("/unit/{unitId}/purchase")
+    public ResponseEntity<?> purchaseUnit(
+            @PathVariable Long unitId,
+            @Valid @RequestBody PurchaseUnitRequest dto
+    ) {
+        try {
+            // Validate M-Pesa number is provided for STK Push
+            if ("MPESA_STKPUSH".equals(dto.getPaymentMethod())
+                    && (dto.getMpesaNumber() == null || dto.getMpesaNumber().trim().isEmpty())) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of(
+                                "success", false,
+                                "message", "M-Pesa number is required for STK Push payments"
+                        ));
+            }
+
+            PurchaseUnitResponse response = purchaseService.handlePurchase(unitId, dto);
+            return ResponseEntity.ok(response);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Failed to process purchase: " + e.getMessage()
+                    ));
+        }
+    }
+
+    // @PostMapping("/mpesa-stk/unit/{unitId}/purchase")
+    // public ResponseEntity<?> initiateStkPush(@Valid
+    //         @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
+    //     try {
+    //         // Validate phone number format (Kenyan format)
+    //         if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Map.of(
+    //                             "success", false,
+    //                             "message", "Invalid phone number format. Use format: 254XXXXXXXXX"
+    //                     ));
+    //         }
+    //         // Validate amount
+    //         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Map.of(
+    //                             "success", false,
+    //                             "message", "Amount must be greater than 0"
+    //                     ));
+    //         }
+    //         Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(), request.getBuyerId());
+    //         request.setInvoiceId(invoice.getId());
+    //         StkPushResponse response = mpesaStkService.initiateStkPush(request.getMpesaNumber(), request.getTotalAmount(), request.getInvoiceId());
+    //         return ResponseEntity.ok(response);
+    //     } catch (RuntimeException e) {
+    //         return ResponseEntity.badRequest()
+    //                 .body(Map.of(
+    //                         "success", false,
+    //                         "message", e.getMessage()
+    //                 ));
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(Map.of(
+    //                         "success", false,
+    //                         "message", "Failed to initiate payment: " + e.getMessage()
+    //                 ));
+    //     }
+    // }
+    // GET - Check STK Push status
+    @GetMapping("/mpesa/status/{checkoutRequestId}")
+    public ResponseEntity<?> checkStkPushStatus(@PathVariable("checkoutRequestId") String checkoutRequestId
+    ) {
+        try {
+            Optional<MpesaPayment> payment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
+
+            if (payment.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            MpesaPayment mpesaPayment = payment.get();
+
+            Map<String, Object> responseMap = new HashMap<>();
+            responseMap.put("checkoutRequestId", mpesaPayment.getCheckoutRequestId());
+            responseMap.put("merchantRequestId", mpesaPayment.getMerchantRequestId());
+            responseMap.put("status", mpesaPayment.getStatus());
+            responseMap.put("amount", mpesaPayment.getAmount());
+            responseMap.put("phoneNumber", mpesaPayment.getPhoneNumber());
+            responseMap.put("mpesaReceiptNumber", mpesaPayment.getMpesaReceiptNumber());
+            responseMap.put("resultCode", mpesaPayment.getResultCode());
+            responseMap.put("resultDesc", mpesaPayment.getResultDesc());
+            responseMap.put("isSuccessful", mpesaPayment.isSuccessful());
+            responseMap.put("isPending", mpesaPayment.isPending());
+            responseMap.put("isFailed", mpesaPayment.isFailed());
+
+            return ResponseEntity.ok(responseMap);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Failed to check payment status: " + e.getMessage()
+                    ));
+        }
+    }
+
+    // GET - Get all M-Pesa payments for an invoice
+    @GetMapping("/mpesa/invoice/{invoiceId}")
+    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByInvoice(@PathVariable("invoiceId") Long invoiceId
+    ) {
+        try {
+            List<MpesaPayment> payments = mpesaPaymentRepository.findByInvoiceIdOrderByCreatedAtDesc(invoiceId);
+
+            if (payments.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(payments, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // GET - Get M-Pesa payment history for a buyer
+    @GetMapping("/mpesa/buyer/{buyerId}")
+    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByBuyer(@PathVariable("buyerId") Long buyerId
+    ) {
+        try {
+            List<MpesaPayment> payments = mpesaPaymentRepository.findByBuyerIdOrderByCreatedAtDesc(buyerId);
+
+            if (payments.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(payments, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    // Add this private helper method for phone number validation
+
+    private boolean isValidKenyanPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            return false;
+        }
+
+        // Remove any spaces or special characters
+        String cleanNumber = phoneNumber.replaceAll("[\\s\\-\\(\\)]", "");
+
+        // Check if it matches Kenyan phone number patterns
+        // Format: 254XXXXXXXXX (where X is 0-9 and total length is 12)
+        return cleanNumber.matches("^254[17]\\d{8}$");
+    }
+
+    //2
+    @PostMapping("/mpesa/callback")
+    public ResponseEntity<?> handleCallback(@RequestBody MpesaCallbackRequest request) {
+        try {
+            // Extract callback data from the request body
+            Map<String, Object> body = request.getBody();
+            if (body == null) {
+                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Invalid request body"));
+            }
+
+            Map<String, Object> stkCallback = (Map<String, Object>) body.get("stkCallback");
+            if (stkCallback == null) {
+                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Invalid callback structure"));
+            }
+
+            String checkoutRequestId = (String) stkCallback.get("CheckoutRequestID");
+            Integer resultCode = (Integer) stkCallback.get("ResultCode");
+
+            if (checkoutRequestId == null) {
+                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Checkout ID cannot be null"));
+            }
+
+            // Find the M-Pesa payment record
+            Optional<MpesaPayment> optionalPayment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
+
+            if (optionalPayment.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("ResultCode", 1, "ResultDesc", "Payment not found"));
+            }
+
+            MpesaPayment payment = optionalPayment.get();
+
+            // Update payment with callback data
+            payment.setResultCode(resultCode != null ? resultCode.toString() : null);
+            payment.setResultDesc((String) stkCallback.get("ResultDesc"));
+            payment.setCallbackReceivedAt(LocalDateTime.now());
+            payment.setStatus(resultCode != null && resultCode == 0 ? "SUCCESS" : "FAILED");
+
+            // If payment was successful, extract additional metadata
+            if (resultCode != null && resultCode == 0) {
+                Map<String, Object> callbackMetadata = (Map<String, Object>) stkCallback.get("CallbackMetadata");
+                if (callbackMetadata != null) {
+                    List<Map<String, Object>> items = (List<Map<String, Object>>) callbackMetadata.get("Item");
+                    if (items != null) {
+                        for (Map<String, Object> item : items) {
+                            String name = (String) item.get("Name");
+                            if ("MpesaReceiptNumber".equals(name)) {
+                                payment.setMpesaReceiptNumber((String) item.get("Value"));
+                            } else if ("TransactionDate".equals(name)) {
+                                payment.setTransactionDate(String.valueOf(item.get("Value")));
+                            }
+                        }
+                    }
+                }
+
+                // Save the updated payment first
+                mpesaPaymentRepository.save(payment);
+
+                // 🔹 NEW: Handle successful payment using PurchaseService
+                purchaseService.handleSuccessfulPayment(checkoutRequestId);
+
+            } else {
+                // Save failed payment
+                mpesaPaymentRepository.save(payment);
+            }
+
+            return ResponseEntity.ok(Map.of("ResultCode", 0, "ResultDesc", "Success"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("ResultCode", 1, "ResultDesc", "Processing error: " + e.getMessage()));
         }
     }
 

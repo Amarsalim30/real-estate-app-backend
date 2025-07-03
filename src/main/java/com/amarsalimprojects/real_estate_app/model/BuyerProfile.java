@@ -4,72 +4,110 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "buyer_profile")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class BuyerProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 100)
+    private String firstName;
+
+    @Column(nullable = false, length = 100)
+    private String lastName;
+
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
-    private String phone;
-    private String address;
-    private String county;
+
+    @Column(length = 15)
+    private String phoneNumber;
+
+    @Column(nullable = false)
+    private String city;
+
+    private String state;
 
     private String nationalId;
+
     private String kraPin;
 
+    private String postalCode;
+
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    // FK to User (1:1)
+    // Relationships
     @OneToOne
-    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JsonBackReference(value = "buyer-user")
     private User user;
 
-    // 1:* relationship with Units
-    @Builder.Default
     @OneToMany(mappedBy = "buyer")
-    private List<Unit> purchasedUnits = new ArrayList<>();
-
-    // Related entities (for business operations)
-    @Builder.Default
-    @OneToMany(mappedBy = "buyer")
-    private List<Invoice> invoices = new ArrayList<>();
+    @JsonManagedReference(value = "buyer-units")
+    private List<Unit> unit;
 
     @Builder.Default
-    @OneToMany(mappedBy = "buyer")
+    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "buyer-payments")
     private List<Payment> payments = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "buyer")
+    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // @JsonManagedReference(value = "buyer-invoices")
+    @JsonIgnore
+    private List<Invoice> invoices = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "buyer-mpesa-payments")
+    private List<MpesaPayment> mpesaPayments = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "buyer-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
+    // Convenience methods
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 }

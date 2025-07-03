@@ -1,0 +1,686 @@
+i want like what you told me above .I want api>activity-log.js page.
+and this page "'use client';
+import { useState, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Header from '@/components/layout/header';
+import { ActivityLogs, ActivityActions, ActivityResources, ActivitySeverity } from '@/data/activityLogs';
+import { 
+  getActivityStats, 
+  getTopUsers, 
+  getRecentCriticalActivities,
+  getActivityLogsByDateRange,
+  getActivityLogsByUser,
+  getActivityLogsByAction,
+  getActivityLogsByResource,
+  getActivityLogsBySeverity
+} from '@/data/activityLogsDetail';
+import { ROLES } from '@/lib/roles';
+
+export default function ActivityLogsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  
+  // State for filters
+  const [filters, setFilters] = useState({
+    dateRange: 'today',
+    customStartDate: '',
+    customEndDate: '',
+    userId: '',
+    action: '',
+    resource: '',
+    severity: '',
+    ipAddress: '',
+    search: ''
+  });
+  
+  const [sortBy, setSortBy] = useState('timestamp');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [showDetails, setShowDetails] = useState({});
+
+  // Check if user is admin
+  if (!session?.user || session.user.role !== ROLES.ADMIN) {
+    router.push('/dashboard');
+    return null;
+  }
+
+  // Get activity statistics
+  const stats = getActivityStats();
+  const topUsers = getTopUsers(5);
+  const criticalActivities = getRecentCriticalActivities(5);
+
+  // Filter logs based on current filters
+  const filteredLogs = useMemo(() => {
+    let logs = [...ActivityLogs];
+
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      let startDate;
+      
+      switch (filters.dateRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'yesterday':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          logs = getActivityLogsByDateRange(startDate, endDate);
+          break;
+                  case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case 'custom':
+          if (filters.customStartDate && filters.customEndDate) {
+            startDate = new Date(filters.customStartDate);
+            const customEndDate = new Date(filters.customEndDate);
+            logs = getActivityLogsByDateRange(startDate, customEndDate);
+          }
+          break;
+        default:
+          startDate = new Date(0);
+      }
+      
+      if (filters.dateRange !== 'custom' && filters.dateRange !== 'yesterday') {
+        logs = logs.filter(log => new Date(log.timestamp) >= startDate);
+      }
+    }
+
+    // User filter
+    if (filters.userId) {
+      logs = logs.filter(log => log.userId === parseInt(filters.userId));
+    }
+
+    // Action filter
+    if (filters.action) {
+      logs = logs.filter(log => log.action === filters.action);
+    }
+
+    // Resource filter
+    if (filters.resource) {
+      logs = logs.filter(log => log.resource === filters.resource);
+    }
+
+    // Severity filter
+    if (filters.severity) {
+      logs = logs.filter(log => log.severity === filters.severity);
+    }
+
+    // IP Address filter
+    if (filters.ipAddress) {
+      logs = logs.filter(log => log.ipAddress.includes(filters.ipAddress));
+    }
+
+    // Search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      logs = logs.filter(log => 
+        log.description.toLowerCase().includes(searchTerm) ||
+        log.userName.toLowerCase().includes(searchTerm) ||
+        log.userEmail.toLowerCase().includes(searchTerm) ||
+        log.ipAddress.includes(searchTerm)
+      );
+    }
+
+    // Sort logs
+    logs.sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+      
+      if (sortBy === 'timestamp') {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return logs;
+  }, [filters, sortBy, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const toggleDetails = (logId) => {
+    setShowDetails(prev => ({
+      ...prev,
+      [logId]: !prev[logId]
+    }));
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'CRITICAL': return 'bg-red-100 text-red-800';
+      case 'ERROR': return 'bg-red-100 text-red-700';
+      case 'HIGH': return 'bg-orange-100 text-orange-800';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+      case 'INFO': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getActionColor = (action) => {
+    switch (action) {
+      case 'CREATE': return 'bg-green-100 text-green-800';
+      case 'UPDATE': return 'bg-blue-100 text-blue-800';
+      case 'DELETE': return 'bg-red-100 text-red-800';
+      case 'LOGIN': return 'bg-purple-100 text-purple-800';
+      case 'LOGOUT': return 'bg-gray-100 text-gray-800';
+      case 'FAILED_LOGIN': return 'bg-red-100 text-red-800';
+      case 'PURCHASE': return 'bg-green-100 text-green-800';
+      case 'PAYMENT_FAILED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const exportLogs = () => {
+    const csvContent = [
+      ['Timestamp', 'User', 'Action', 'Resource', 'Description', 'IP Address', 'Severity'].join(','),
+      ...filteredLogs.map(log => [
+        log.timestamp.toISOString(),
+        `"${log.userName}"`,
+        log.action,
+        log.resource,
+        `"${log.description}"`,
+        log.ipAddress,
+        log.severity
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activity-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header session={session} />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Activity Logs</h1>
+              <p className="text-gray-600 mt-1">Monitor user activities and system events</p>
+            </div>
+            <button
+              onClick={exportLogs}
+              className="btn-secondary"
+            >
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="text-sm text-gray-500 mb-1">Total Activities</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total.toLocaleString()}</div>
+            <div className="text-sm text-green-600 mt-1">All time</div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="text-sm text-gray-500 mb-1">Today's Activities</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.todayCount}</div>
+            <div className="text-sm text-gray-500 mt-1">Last 24 hours</div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="text-sm text-gray-500 mb-1">Critical Events</div>
+            <div className="text-2xl font-bold text-red-600">{stats.criticalCount}</div>
+            <div className="text-sm text-gray-500 mt-1">Requires attention</div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="text-sm text-gray-500 mb-1">Failed Logins</div>
+            <div className="text-2xl font-bold text-orange-600">{stats.failedLoginCount}</div>
+            <div className="text-sm text-gray-500 mt-1">Security events</div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Top Active Users */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Most Active Users</h3>
+            <div className="space-y-3">
+              {topUsers.map((user, index) => (
+                <div key={user.userId} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{user.userName}</div>
+                      <div className="text-sm text-gray-500">{user.userEmail}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-900">{user.activityCount}</div>
+                    <div className="text-sm text-gray-500">activities</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Critical Activities */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Critical Events</h3>
+            <div className="space-y-3">
+              {criticalActivities.map((activity) => (
+                <div key={activity.id} className="border-l-4 border-red-400 pl-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{activity.action}</div>
+                      <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {activity.timestamp.toLocaleString()}
+                      </div>
+                    </div>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(activity.severity)}`}>
+                      {activity.severity}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <select
+                value={filters.dateRange}
+                onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Action</label>
+              <select
+                value={filters.action}
+                onChange={(e) => handleFilterChange('action', e.target.value)}
+                className="input-field"
+              >
+                <option value="">All Actions</option>
+                {Object.values(ActivityActions).map(action => (
+                  <option key={action} value={action}>{action}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Resource</label>
+              <select
+                value={filters.resource}
+                onChange={(e) => handleFilterChange('resource', e.target.value)}
+                className="input-field"
+              >
+                <option value="">All Resources</option>
+                {Object.values(ActivityResources).map(resource => (
+                  <option key={resource} value={resource}>{resource}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
+              <select
+                value={filters.severity}
+                onChange={(e) => handleFilterChange('severity', e.target.value)}
+                className="input-field"
+              >
+                <option value="">All Severities</option>
+                {Object.values(ActivitySeverity).map(severity => (
+                  <option key={severity} value={severity}>{severity}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filters.dateRange === 'custom' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input
+                  type="datetime-local"
+                  value={filters.customStartDate}
+                  onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input
+                  type="datetime-local"
+                  value={filters.customEndDate}
+                  onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
+                  className="input-field"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <input
+                type="text"
+                placeholder="Search descriptions, users, emails..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">IP Address</label>
+              <input
+                              type="text"
+                placeholder="Filter by IP address"
+                value={filters.ipAddress}
+                onChange={(e) => handleFilterChange('ipAddress', e.target.value)}
+                className="input-field"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Logs Table */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Activity Logs ({filteredLogs.length.toLocaleString()})
+              </h2>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-600">Show:</label>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('timestamp')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Timestamp</span>
+                      {sortBy === 'timestamp' && (
+                        <span className="text-blue-600">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('userName')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>User</span>
+                      {sortBy === 'userName' && (
+                        <span className="text-blue-600">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('action')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Action</span>
+                      {sortBy === 'action' && (
+                        <span className="text-blue-600">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Resource
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    IP Address
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('severity')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Severity</span>
+                      {sortBy === 'severity' && (
+                        <span className="text-blue-600">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedLogs.map((log) => (
+                  <React.Fragment key={log.id}>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>{log.timestamp.toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-500">
+                          {log.timestamp.toLocaleTimeString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{log.userName}</div>
+                        <div className="text-xs text-gray-500">{log.userEmail}</div>
+                        <div className="text-xs">
+                          <span className={`inline-flex px-1 py-0.5 text-xs font-semibold rounded ${
+                            log.userRole === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {log.userRole}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getActionColor(log.action)}`}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.resource}
+                        {log.resourceId && (
+                          <div className="text-xs text-gray-500">ID: {log.resourceId}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        <div className="truncate">{log.description}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.ipAddress}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(log.severity)}`}>
+                          {log.severity}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() => toggleDetails(log.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {showDetails[log.id] ? 'Hide' : 'Details'}
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    {showDetails[log.id] && (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">User Agent</h4>
+                                <p className="text-sm text-gray-600 break-all">{log.userAgent}</p>
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Metadata</h4>
+                                <pre className="text-xs text-gray-600 bg-white p-2 rounded border overflow-x-auto">
+                                  {JSON.stringify(log.metadata, null, 2)}
+                                </pre>
+                              </div>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 mb-2">Full Description</h4>
+                              <p className="text-sm text-gray-600">{log.description}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {paginatedLogs.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg">No activity logs found</div>
+              <div className="text-gray-400 mt-2">Try adjusting your filters</div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredLogs.length)} of {filteredLogs.length} results
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const page = i + 1;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 text-sm border rounded ${
+                            currentPage === page
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && (
+                      <>
+                        <span className="px-2 text-gray-500">...</span>
+                        <button
+                          onClick={() => setCurrentPage(totalPages)}
+                          className={`px-3 py-1 text-sm border rounded ${
+                            currentPage === totalPages
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {totalPages}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+"to extract from it

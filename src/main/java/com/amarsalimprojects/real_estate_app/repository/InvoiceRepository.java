@@ -43,4 +43,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     @Query("SELECT i FROM Invoice i WHERE i.buyer.email = :email")
     List<Invoice> findByBuyerEmail(@Param("email") String email);
+
+    Optional<Invoice> findByCheckoutRequestId(String id);
+
 }

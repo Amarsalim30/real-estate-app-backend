@@ -8,23 +8,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class PaymentStatisticsDTO {
 
     private Long totalPayments;
+    private BigDecimal totalAmount;
     private Long completedPayments;
+    private BigDecimal completedAmount;
     private Long pendingPayments;
-    private Long failedPayments;
-    private BigDecimal totalAmountCollected;
     private BigDecimal pendingAmount;
-    private Double completionRate;
-
-    public Double getCompletionRate() {
-        if (totalPayments == 0) {
-            return 0.0;
-        }
-        return (completedPayments.doubleValue() / totalPayments.doubleValue()) * 100;
-    }
+    private Long failedPayments;
+    private BigDecimal failedAmount;
+    private BigDecimal averagePaymentAmount;
+    private Long paymentsToday;
+    private BigDecimal amountToday;
+    private Long paymentsThisMonth;
+    private BigDecimal amountThisMonth;
 }

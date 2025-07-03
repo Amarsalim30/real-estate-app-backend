@@ -228,6 +228,12 @@ public class ProjectController {
                 if (project.getStartDate() != null) {
                     projectToUpdate.setStartDate(project.getStartDate());
                 }
+                if (project.getLatitude() != null) {
+                    projectToUpdate.setLatitude(project.getLatitude());
+                }
+                if (project.getLongitude() != null) {
+                    projectToUpdate.setLongitude(project.getLongitude());
+                }
                 if (project.getTargetCompletionDate() != null) {
                     projectToUpdate.setTargetCompletionDate(project.getTargetCompletionDate());
                 }

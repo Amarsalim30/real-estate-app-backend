@@ -43,8 +43,8 @@ public class Project {
     private String county;
     private String subCounty;
 
-// private Double latitude;
-// private Double longitude;
+    private Double latitude;
+    private Double longitude;
     @Enumerated(EnumType.STRING)
     private ProjectStatus status;
 
@@ -60,6 +60,7 @@ public class Project {
     //selling points
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
+    private BigDecimal downPaymentPercentage;
     @ElementCollection
     private List<String> images;
 
@@ -72,7 +73,7 @@ public class Project {
     // 1:* relationship with Units
     @Builder.Default
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "project-units")
     private List<Unit> units = new ArrayList<>();
 
     public void addUnit(Unit unit) {

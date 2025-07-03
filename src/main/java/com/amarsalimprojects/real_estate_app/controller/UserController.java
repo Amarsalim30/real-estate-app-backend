@@ -1253,6 +1253,7 @@ public class UserController {
 
         String htmlBody = """
         <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+            <h1 style="color: #007bff;">Reset Your Password</h1>
             <p>Hi %s,</p>
             <p>We received a request to reset your password.</p>
             <p>
@@ -1296,7 +1297,7 @@ public class UserController {
             }
 
             // Hash the password before saving (you should use BCrypt or similar)
-            user.setPassword(newPassword); // TODO: Hash this password
+            user.setPassword(newPassword);
             user.setResetToken(null);
             user.setResetTokenExpiry(null);
             userRepository.save(user);

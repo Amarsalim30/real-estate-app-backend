@@ -3,7 +3,7 @@ package com.amarsalimprojects.real_estate_app.controller;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +30,8 @@ import com.amarsalimprojects.real_estate_app.model.Unit;
 import com.amarsalimprojects.real_estate_app.repository.UnitRepository;
 import com.amarsalimprojects.real_estate_app.service.UnitService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/units")
 @CrossOrigin(origins = "*")
@@ -46,17 +48,16 @@ public class UnitController {
 
     // CREATE - Add a new unit
     @PostMapping
-    public ResponseEntity<UnitResponse> createUnit(@RequestBody UnitRequest request) {
+    public ResponseEntity<UnitResponse> createUnit(@Valid @RequestBody UnitRequest request) {
         try {
             // Validate required fields
             if (request.getProjectId() == null) {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Check for duplicate unitNumber
+            // Check for duplicate unitNumber using the new method
             if (request.getUnitNumber() != null && !request.getUnitNumber().isEmpty()) {
-                Optional<Unit> existingUnit = unitRepository.findByUnitNumber(request.getUnitNumber());
-                if (existingUnit.isPresent()) {
+                if (unitRepository.existsByUnitNumber(request.getUnitNumber())) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
             }
@@ -95,8 +96,10 @@ public class UnitController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            e.printStackTrace(); // Debugging
+            e.printStackTrace(); // For debugging - consider using proper logging
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -107,13 +110,13 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findAll();
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
 
             List<UnitResponse> unitResponses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(unitResponses, HttpStatus.OK);
+            return ResponseEntity.ok(unitResponses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -123,11 +126,11 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findAll();
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
-            return new ResponseEntity<>(units, HttpStatus.OK);
+            return ResponseEntity.ok(units);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -138,12 +141,12 @@ public class UnitController {
             Optional<Unit> unit = unitRepository.findById(id);
             if (unit.isPresent()) {
                 UnitResponse response = unitMapper.toResponse(unit.get());
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -154,12 +157,12 @@ public class UnitController {
             Optional<Unit> unit = unitRepository.findByUnitNumber(unitNumber);
             if (unit.isPresent()) {
                 UnitResponse response = unitMapper.toResponse(unit.get());
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -169,12 +172,12 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByProjectId(projectId);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -184,12 +187,12 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByStatus(status);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -199,12 +202,12 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByUnitType(type);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -214,12 +217,12 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByFloor(floor);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -229,12 +232,12 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByBedrooms(bedrooms);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -244,14 +247,17 @@ public class UnitController {
             @RequestParam("minPrice") BigDecimal minPrice,
             @RequestParam("maxPrice") BigDecimal maxPrice) {
         try {
+            if (minPrice.compareTo(maxPrice) > 0) {
+                return ResponseEntity.badRequest().build();
+            }
             List<Unit> units = unitRepository.findByPriceBetween(minPrice, maxPrice);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -261,33 +267,33 @@ public class UnitController {
         try {
             List<Unit> units = unitRepository.findByBuyerId(buyerId);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // READ - Get featured units
+    // READ - Get featured units - FIX: Change method name
     @GetMapping("/featured")
     public ResponseEntity<List<UnitResponse>> getFeaturedUnits() {
         try {
-            List<Unit> units = unitRepository.findByIsFeaturedTrue();
+            List<Unit> units = unitRepository.findByFeaturedTrue(); // Fixed method name
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     // UPDATE - Update unit by ID
     @PutMapping("/{id}")
-    public ResponseEntity<UnitResponse> updateUnit(@PathVariable("id") Long id, @RequestBody UnitRequest request) {
+    public ResponseEntity<UnitResponse> updateUnit(@PathVariable("id") Long id, @Valid @RequestBody UnitRequest request) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
@@ -295,12 +301,14 @@ public class UnitController {
                 unitMapper.updateEntityFromRequest(unitToUpdate, request);
                 Unit updatedUnit = unitRepository.save(unitToUpdate);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -314,12 +322,14 @@ public class UnitController {
                 unitMapper.updateEntityFromRequest(existingUnit, request);
                 Unit updatedUnit = unitRepository.save(existingUnit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -333,12 +343,12 @@ public class UnitController {
                 unit.setStatus(status);
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -352,12 +362,12 @@ public class UnitController {
                 unit.setCurrentStage(stage);
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -367,9 +377,13 @@ public class UnitController {
         try {
             Unit updatedUnit = unitService.assignBuyerToUnit(id, buyerId);
             UnitResponse response = unitMapper.toResponse(updatedUnit);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -379,9 +393,11 @@ public class UnitController {
         try {
             Unit updatedUnit = unitService.removeBuyerFromUnit(id);
             UnitResponse response = unitMapper.toResponse(updatedUnit);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -392,15 +408,15 @@ public class UnitController {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                unit.setIsFeatured(!unit.isFeatured());
+                unit.setFeatured(!unit.isFeatured());
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -413,15 +429,17 @@ public class UnitController {
                 Unit unit = existingUnit.get();
                 if (unit.getFeatures() != null) {
                     unit.getFeatures().add(feature);
+                } else {
+                    unit.setFeatures(Set.of(feature)); // Fix: Import Set
                 }
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -437,127 +455,71 @@ public class UnitController {
                 }
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return ResponseEntity.ok(response);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     // DELETE - Delete unit by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<HttpStatus> deleteUnit(@PathVariable("id") Long id) {
+    public ResponseEntity<Void> deleteUnit(@PathVariable("id") Long id) {
         try {
-            Optional<Unit> unit = unitRepository.findById(id);
-            if (unit.isPresent()) {
+            if (unitRepository.existsById(id)) {
                 unitRepository.deleteById(id);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     // DELETE - Delete units by project ID
     @DeleteMapping("/project/{projectId}")
-    public ResponseEntity<HttpStatus> deleteUnitsByProjectId(@PathVariable("projectId") Long projectId) {
+    public ResponseEntity<Void> deleteUnitsByProjectId(@PathVariable("projectId") Long projectId) {
         try {
             List<Unit> units = unitRepository.findByProjectId(projectId);
             if (!units.isEmpty()) {
                 unitRepository.deleteAll(units);
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Utility endpoints
-    // GET - Get unit count
+    // Utility endpoints - Essential only
     @GetMapping("/count")
     public ResponseEntity<Long> getUnitCount() {
         try {
             long count = unitRepository.count();
-            return new ResponseEntity<>(count, HttpStatus.OK);
+            return ResponseEntity.ok(count);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // GET - Get unit count by status
-    @GetMapping("/count/status/{status}")
-    public ResponseEntity<Long> getUnitCountByStatus(@PathVariable("status") UnitStatus status) {
-        try {
-            List<Unit> units = unitRepository.findByStatus(status);
-            return new ResponseEntity<>((long) units.size(), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Get unit count by project
-    @GetMapping("/count/project/{projectId}")
-    public ResponseEntity<Long> getUnitCountByProject(@PathVariable("projectId") Long projectId) {
-        try {
-            List<Unit> units = unitRepository.findByProjectId(projectId);
-            return new ResponseEntity<>((long) units.size(), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Get available units
     @GetMapping("/available")
     public ResponseEntity<List<UnitResponse>> getAvailableUnits() {
         try {
             List<Unit> units = unitRepository.findByStatus(UnitStatus.AVAILABLE);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // GET - Get sold units
-    @GetMapping("/sold")
-    public ResponseEntity<List<UnitResponse>> getSoldUnits() {
-        try {
-            List<Unit> units = unitRepository.findByStatus(UnitStatus.SOLD);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Get reserved units
-    @GetMapping("/reserved")
-    public ResponseEntity<List<UnitResponse>> getReservedUnits() {
-        try {
-            List<Unit> units = unitRepository.findByStatus(UnitStatus.RESERVED);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Search units by multiple criteria
     @GetMapping("/search")
     public ResponseEntity<List<UnitResponse>> searchUnits(
             @RequestParam(required = false) UnitType type,
@@ -570,75 +532,12 @@ public class UnitController {
         try {
             List<Unit> units = unitService.searchUnits(type, minBedrooms, maxBedrooms, minPrice, maxPrice, status, projectId);
             if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return ResponseEntity.noContent().build();
             }
             List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Get units by construction stage
-    @GetMapping("/construction-stage/{stage}")
-    public ResponseEntity<List<UnitResponse>> getUnitsByConstructionStage(@PathVariable ConstructionStage stage) {
-        try {
-            List<Unit> units = unitRepository.findByCurrentStage(stage);
-            if (units.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            List<UnitResponse> responses = unitMapper.toResponseList(units);
-            return new ResponseEntity<>(responses, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // PATCH - Bulk update unit status
-    @PatchMapping("/bulk-update-status")
-    public ResponseEntity<List<UnitResponse>> bulkUpdateUnitStatus(
-            @RequestParam List<Long> unitIds,
-            @RequestParam UnitStatus status) {
-        try {
-            List<Unit> updatedUnits = unitIds.stream()
-                    .map(id -> unitRepository.findById(id))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .peek(unit -> unit.setStatus(status))
-                    .map(unitRepository::save)
-                    .collect(Collectors.toList());
-
-            List<UnitResponse> responses = unitMapper.toResponseList(updatedUnits);
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // GET - Get similar units (same type, similar price range)
-    @GetMapping("/{id}/similar")
-    public ResponseEntity<List<UnitResponse>> getSimilarUnits(@PathVariable Long id) {
-        try {
-            Optional<Unit> unitOpt = unitRepository.findById(id);
-            if (unitOpt.isPresent()) {
-                Unit unit = unitOpt.get();
-                BigDecimal priceRange = unit.getPrice().multiply(BigDecimal.valueOf(0.2)); // 20% range
-                BigDecimal minPrice = unit.getPrice().subtract(priceRange);
-                BigDecimal maxPrice = unit.getPrice().add(priceRange);
-
-                List<Unit> similarUnits = unitRepository.findAll().stream()
-                        .filter(u -> !u.getId().equals(id))
-                        .filter(u -> u.getUnitType() == unit.getUnitType())
-                        .filter(u -> u.getPrice().compareTo(minPrice) >= 0 && u.getPrice().compareTo(maxPrice) <= 0)
-                        .limit(5)
-                        .collect(Collectors.toList());
-
-                List<UnitResponse> responses = unitMapper.toResponseList(similarUnits);
-                return ResponseEntity.ok(responses);
-            }
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

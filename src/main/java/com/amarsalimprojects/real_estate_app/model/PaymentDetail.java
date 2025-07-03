@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
@@ -51,22 +52,21 @@ public class PaymentDetail {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // FK to BuyerProfile
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
+    @JsonBackReference(value="buyer-payment-details")
     private BuyerProfile buyer;
 
-    // FK to Invoice
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
+    @JsonBackReference(value="invoice-payment-details")
     private Invoice invoice;
 
-    // FK to Payment
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)
+    @JsonBackReference(value="payment-payment-details")
     private Payment payment;
 
-    // Embedded payment method details
     @Embedded
     @AttributeOverrides({
         @AttributeOverride(name = "bankName", column = @Column(name = "bank_details_bank_name")),
@@ -103,7 +103,6 @@ public class PaymentDetail {
     }
 }
 
-// Embedded classes for payment method metadata
 @Embeddable
 @Data
 @NoArgsConstructor
