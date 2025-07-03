@@ -7,6 +7,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.amarsalimprojects.real_estate_app.config.MpesaConfig;
+import com.amarsalimprojects.real_estate_app.controller.PaymentController;
 import com.amarsalimprojects.real_estate_app.dto.responses.StkPushResponse;
 import com.amarsalimprojects.real_estate_app.model.Invoice;
 import com.amarsalimprojects.real_estate_app.model.MpesaPayment;
@@ -23,6 +26,8 @@ import com.amarsalimprojects.real_estate_app.repository.MpesaPaymentRepository;
 
 @Service
 public class MpesaStkService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
     private final MpesaConfig config;
     private final MpesaAuthService authService;
@@ -51,12 +56,13 @@ public class MpesaStkService {
         String password = Base64.getEncoder().encodeToString(
                 (config.getShortcode() + config.getPasskey() + timestamp).getBytes()
         );
+        logger.info("callback url: " + config.getCallbackUrl());
         Map<String, Object> body = new HashMap<>();
         body.put("BusinessShortCode", config.getShortcode());
         body.put("Password", password);
         body.put("Timestamp", timestamp);
         body.put("TransactionType", "CustomerPayBillOnline");
-        body.put("Amount", testAmount.intValue());
+        body.put("Amount", amount.toString());
         body.put("PartyA", phone);
         body.put("PartyB", config.getShortcode());
         body.put("PhoneNumber", phone);

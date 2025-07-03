@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,8 @@ import com.amarsalimprojects.real_estate_app.dto.PaymentStatisticsDTO;
 import com.amarsalimprojects.real_estate_app.dto.PaymentSummaryDTO;
 import com.amarsalimprojects.real_estate_app.dto.ProcessPaymentRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest.CallbackItem;
+import com.amarsalimprojects.real_estate_app.dto.requests.MpesaCallbackRequest.StkCallback;
 import com.amarsalimprojects.real_estate_app.dto.requests.PurchaseUnitRequest;
 import com.amarsalimprojects.real_estate_app.dto.responses.PurchaseUnitResponse;
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
@@ -48,6 +52,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/payments")
 @CrossOrigin(origins = "*")
 public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
     @Autowired
     private PurchaseService purchaseService;
@@ -837,65 +843,42 @@ public class PaymentController {
     @PostMapping("/mpesa/callback")
     public ResponseEntity<?> handleCallback(@RequestBody MpesaCallbackRequest request) {
         try {
-            // Extract callback data from the request body
-            Map<String, Object> body = request.getBody();
-            if (body == null) {
-                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Invalid request body"));
-            }
+            logger.info("=== M-PESA CALLBACK RECEIVED ===");
+            logger.info("Full callback request: {}", request);
+            StkCallback callback = request.getBody().getStkCallback();
+            String checkoutRequestId = callback.getCheckoutRequestID();
+            int resultCode = callback.getResultCode();
+            String resultDesc = callback.getResultDesc();
 
-            Map<String, Object> stkCallback = (Map<String, Object>) body.get("stkCallback");
-            if (stkCallback == null) {
-                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Invalid callback structure"));
-            }
-
-            String checkoutRequestId = (String) stkCallback.get("CheckoutRequestID");
-            Integer resultCode = (Integer) stkCallback.get("ResultCode");
-
-            if (checkoutRequestId == null) {
-                return ResponseEntity.badRequest().body(Map.of("ResultCode", 1, "ResultDesc", "Checkout ID cannot be null"));
-            }
-
-            // Find the M-Pesa payment record
             Optional<MpesaPayment> optionalPayment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
-
             if (optionalPayment.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("ResultCode", 1, "ResultDesc", "Payment not found"));
             }
 
             MpesaPayment payment = optionalPayment.get();
-
-            // Update payment with callback data
-            payment.setResultCode(resultCode != null ? resultCode.toString() : null);
-            payment.setResultDesc((String) stkCallback.get("ResultDesc"));
+            payment.setResultCode(String.valueOf(resultCode));
+            payment.setResultDesc(resultDesc);
             payment.setCallbackReceivedAt(LocalDateTime.now());
-            payment.setStatus(resultCode != null && resultCode == 0 ? "SUCCESS" : "FAILED");
+            payment.setStatus(resultCode == 0 ? "SUCCESS" : "FAILED");
 
-            // If payment was successful, extract additional metadata
-            if (resultCode != null && resultCode == 0) {
-                Map<String, Object> callbackMetadata = (Map<String, Object>) stkCallback.get("CallbackMetadata");
-                if (callbackMetadata != null) {
-                    List<Map<String, Object>> items = (List<Map<String, Object>>) callbackMetadata.get("Item");
-                    if (items != null) {
-                        for (Map<String, Object> item : items) {
-                            String name = (String) item.get("Name");
-                            if ("MpesaReceiptNumber".equals(name)) {
-                                payment.setMpesaReceiptNumber((String) item.get("Value"));
-                            } else if ("TransactionDate".equals(name)) {
-                                payment.setTransactionDate(String.valueOf(item.get("Value")));
-                            }
-                        }
+            if (resultCode == 0 && callback.getCallbackMetadata() != null) {
+                for (CallbackItem item : callback.getCallbackMetadata().getItems()) {
+                    switch (item.getName()) {
+                        case "MpesaReceiptNumber" ->
+                            payment.setMpesaReceiptNumber((String) item.getValue());
+                        case "TransactionDate" ->
+                            payment.setTransactionDate(String.valueOf(item.getValue()));
+                        case "PhoneNumber" ->
+                            payment.setPhoneNumber(String.valueOf(item.getValue()));
+                        case "Amount" ->
+                            payment.setAmount(new BigDecimal(String.valueOf(item.getValue())));
                     }
                 }
 
-                // Save the updated payment first
                 mpesaPaymentRepository.save(payment);
-
-                // 🔹 NEW: Handle successful payment using PurchaseService
                 purchaseService.handleSuccessfulPayment(checkoutRequestId);
-
             } else {
-                // Save failed payment
                 mpesaPaymentRepository.save(payment);
             }
 
@@ -903,7 +886,7 @@ public class PaymentController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("ResultCode", 1, "ResultDesc", "Processing error: " + e.getMessage()));
+                    .body(Map.of("ResultCode", 1, "ResultDesc", "Error: " + e.getMessage()));
         }
     }
 

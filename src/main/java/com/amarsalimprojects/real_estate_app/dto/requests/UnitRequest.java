@@ -16,6 +16,7 @@ import lombok.Data;
 public class UnitRequest {
 
     private Long projectId;
+    private Long unitId;
     private String unitNumber;
     private Integer floor;
     private ConstructionStage constructionStage;
