@@ -20,8 +20,38 @@ A comprehensive real estate management system with integrated M-Pesa payment pro
 
 - **Testing**: Unit and integration testing with JUnit, Mockito, and TestContainers
 
-## 🚀 Quick Start
+# What I Learned
 
+During the development of this project, I gained significant insights into building backend applications with Spring Boot. Here are the key resources and references that guided my learning process:
+
+## Key Learning Resources
+
+- **[Spring Boot Tutorial: A Comprehensive Guide for Beginners](https://www.codingshuttle.com/spring-boot-handbook/spring-boot-tutorial-a-comprehensive-guide-for-beginners/)**  
+  This guide offered a clear and practical introduction to Spring Boot, helping me understand the foundational concepts and best practices.
+
+- **Books**
+  - *Spring Boot in Action*  
+    This book provided in-depth coverage of Spring Boot features and real-world usage scenarios.
+  - *Baeldung (baeldung.com)*  
+    Baeldung articles were invaluable for quick tips, best practices, and deep dives into specific Spring Boot topics.
+
+- **Official Documentation**
+  - [Spring Boot Reference Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)  
+    The official docs were crucial for understanding advanced configurations and troubleshooting.
+
+## What I Learned
+
+- Setting up and structuring a Spring Boot application.
+- Working with RESTful APIs using Spring MVC.
+- Implementing data persistence with Spring Data JPA.
+- Understanding dependency injection and application context.
+- Managing application properties and external configurations.
+- Securing endpoints and handling authentication.
+- Testing Spring Boot applications efficiently.
+
+These resources and experiences have significantly strengthened my backend development skills and deepened my understanding of the Spring Boot ecosystem.
+
+## 🚀 Quick Start
 ### Prerequisites
 
 - Java 17+
