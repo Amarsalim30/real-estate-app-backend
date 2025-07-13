@@ -77,7 +77,7 @@ public class PaymentService {
     }
 
     public BigDecimal calculateTotalPaidForInvoice(Long invoiceId) {
-        List<Payment> payments = paymentRepository.findByInvoiceIdAndStatus(invoiceId, PaymentStatus.COMPLETED);
+        List<Payment> payments = paymentRepository.findByInvoice_IdAndStatus(invoiceId, PaymentStatus.COMPLETED);
         return payments.stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -107,7 +107,7 @@ public class PaymentService {
 
         if (invoiceOpt.isPresent()) {
             Invoice invoice = invoiceOpt.get();
-            List<Payment> payments = paymentRepository.findByInvoiceId(invoiceId);
+            List<Payment> payments = paymentRepository.findByInvoice_Id(invoiceId);
 
             BigDecimal totalPaid = payments.stream()
                     .filter(p -> p.getStatus() == PaymentStatus.COMPLETED)

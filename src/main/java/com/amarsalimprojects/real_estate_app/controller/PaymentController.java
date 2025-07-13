@@ -152,7 +152,7 @@ public class PaymentController {
     @GetMapping("/invoice/{invoiceId}")
     public ResponseEntity<List<Payment>> getPaymentsByInvoiceId(@PathVariable("invoiceId") Long invoiceId) {
         try {
-            List<Payment> payments = paymentRepository.findByInvoiceId(invoiceId);
+            List<Payment> payments = paymentRepository.findByInvoice_Id(invoiceId);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -166,7 +166,7 @@ public class PaymentController {
     @GetMapping("/buyer/{buyerId}")
     public ResponseEntity<List<Payment>> getPaymentsByBuyerId(@PathVariable("buyerId") Long buyerId) {
         try {
-            List<Payment> payments = paymentRepository.findByBuyerId(buyerId);
+            List<Payment> payments = paymentRepository.findByBuyer_Id(buyerId);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -182,7 +182,7 @@ public class PaymentController {
             @PathVariable("buyerId") Long buyerId,
             @PathVariable("status") PaymentStatus status) {
         try {
-            List<Payment> payments = paymentRepository.findByBuyerIdAndStatus(buyerId, status);
+            List<Payment> payments = paymentRepository.findByBuyer_IdAndStatus(buyerId, status);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -192,13 +192,19 @@ public class PaymentController {
         }
     }
 
+    @GetMapping("/invoice/{invoiceId}/has-success")
+    public ResponseEntity<Boolean> hasSuccessfulPayment(@PathVariable Long invoiceId) {
+        boolean exists = paymentRepository.existsByInvoice_IdAndStatus(invoiceId, PaymentStatus.COMPLETED);
+        return ResponseEntity.ok(exists);
+    }
+
     // READ - Get payments by invoice ID and status
     @GetMapping("/invoice/{invoiceId}/status/{status}")
     public ResponseEntity<List<Payment>> getPaymentsByInvoiceIdAndStatus(
             @PathVariable("invoiceId") Long invoiceId,
             @PathVariable("status") PaymentStatus status) {
         try {
-            List<Payment> payments = paymentRepository.findByInvoiceIdAndStatus(invoiceId, status);
+            List<Payment> payments = paymentRepository.findByInvoice_IdAndStatus(invoiceId, status);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -447,7 +453,7 @@ public class PaymentController {
     @DeleteMapping("/buyer/{buyerId}")
     public ResponseEntity<HttpStatus> deletePaymentsByBuyerId(@PathVariable("buyerId") Long buyerId) {
         try {
-            List<Payment> payments = paymentRepository.findByBuyerId(buyerId);
+            List<Payment> payments = paymentRepository.findByBuyer_Id(buyerId);
             if (!payments.isEmpty()) {
                 paymentRepository.deleteAll(payments);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -609,7 +615,7 @@ public class PaymentController {
     @GetMapping("/buyer/{buyerId}/history")
     public ResponseEntity<List<Payment>> getPaymentHistoryByBuyer(@PathVariable("buyerId") Long buyerId) {
         try {
-            List<Payment> payments = paymentRepository.findByBuyerId(buyerId);
+            List<Payment> payments = paymentRepository.findByBuyer_Id(buyerId);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }

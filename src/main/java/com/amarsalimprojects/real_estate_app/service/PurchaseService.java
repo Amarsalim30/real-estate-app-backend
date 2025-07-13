@@ -78,6 +78,13 @@ public class PurchaseService {
                 .issuedDate(LocalDate.now())
                 .dueDate(LocalDate.now().plusDays(7))
                 .build();
+        invoice = invoiceRepository.save(invoice);
+
+        String paddedId = String.format("%05d", invoice.getId());
+        String year = String.valueOf(LocalDate.now().getYear());
+        String invoiceNumber = "INV-" + year + "-" + paddedId;
+
+        invoice.setInvoiceNumber(invoiceNumber);
 
         invoice = invoiceRepository.save(invoice);
         // Create initial payment record

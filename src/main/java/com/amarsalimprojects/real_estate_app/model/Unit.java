@@ -72,6 +72,9 @@ public class Unit {
     private LocalDateTime reservedDate;
     private LocalDateTime soldDate;
 
+    private Long reservedBy;
+    private LocalDateTime reservedUntil;
+
     @Enumerated(EnumType.STRING)
     private ConstructionStage currentStage;
 

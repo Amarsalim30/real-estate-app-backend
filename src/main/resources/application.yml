@@ -14,9 +14,9 @@ spring:
     resources:
       add-mappings: true
 
-# app:
-#   upload:
-#     dir: UPLOAD_DIR:/path/to/default/uploads
+app:
+  upload:
+    dir: C:\Users\USER\Documents\CODING\Real Estate Project\SpringBoot-Backend\real-estate-app\uploads
 
 com:
   amarsalimprojects:
@@ -30,7 +30,7 @@ mpesa:
   consumer-secret: ${MPESA_CONSUMER_SECRET}
   passkey: ${MPESA_PASSKEY}
   shortcode: ${MPESA_SHORTCODE}
-  callback-url: https://b203-129-222-147-200.ngrok-free.app/api/payments/mpesa/callback
+  callback-url: https://4ca2531ecab5.ngrok-free.app/api/payments/mpesa/callback
   base-url: https://sandbox.safaricom.co.ke
   stk-push-url: /mpesa/stkpush/v1/processrequest
   token-url: /oauth/v1/generate?grant_type=client_credentials

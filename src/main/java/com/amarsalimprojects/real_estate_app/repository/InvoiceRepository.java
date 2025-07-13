@@ -18,9 +18,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByStatus(InvoiceStatus status);
 
-    List<Invoice> findByBuyerId(Long buyerId);
+// ✅ Instead, use:
+    @Query("SELECT i FROM Invoice i WHERE i.buyer.id = :buyerId")
+    List<Invoice> findByBuyer_Id(@Param("buyerId") Long buyerId);
 
-    Optional<Invoice> findByUnitId(Long unitId);
+    @Query("SELECT i FROM Invoice i WHERE i.unit.id = :unitId")
+    Optional<Invoice> findInvoiceByUnitId(@Param("unitId") Long unitId);
 
     List<Invoice> findByIssuedDateBetween(LocalDate startDate, LocalDate endDate);
 

@@ -1,6 +1,7 @@
 package com.amarsalimprojects.real_estate_app.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,4 +72,7 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
     List<Unit> findAvailableUnitsUnderPrice(@Param("maxPrice") BigDecimal maxPrice);
 
     boolean existsByUnitNumber(String unitNumber);
+
+    List<Unit> findByStatusAndReservedUntilBefore(UnitStatus status, LocalDateTime time);
+
 }

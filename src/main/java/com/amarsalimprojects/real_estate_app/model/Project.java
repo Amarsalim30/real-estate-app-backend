@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+
 import com.amarsalimprojects.real_estate_app.enums.ProjectStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -67,7 +70,10 @@ public class Project {
     @ElementCollection
     private Set<String> amenities;
 
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     // 1:* relationship with Units

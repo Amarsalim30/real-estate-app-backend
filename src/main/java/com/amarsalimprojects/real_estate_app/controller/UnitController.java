@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amarsalimprojects.real_estate_app.dto.requests.UnitRequest;
+import com.amarsalimprojects.real_estate_app.dto.requests.UpdateStatusRequest;
 import com.amarsalimprojects.real_estate_app.dto.responses.UnitResponse;
 import com.amarsalimprojects.real_estate_app.enums.ConstructionStage;
 import com.amarsalimprojects.real_estate_app.enums.UnitStatus;
@@ -335,12 +336,20 @@ public class UnitController {
 
     // UPDATE - Update unit status
     @PatchMapping("/{id}/status")
-    public ResponseEntity<UnitResponse> updateUnitStatus(@PathVariable("id") Long id, @RequestParam("status") UnitStatus status) {
+    public ResponseEntity<UnitResponse> updateUnitStatus(@PathVariable("id") Long id, @RequestBody UpdateStatusRequest statusRequest) {
         try {
             Optional<Unit> existingUnit = unitRepository.findById(id);
             if (existingUnit.isPresent()) {
                 Unit unit = existingUnit.get();
-                unit.setStatus(status);
+                unit.setStatus(statusRequest.getStatus());
+                unit.setReservedBy(statusRequest.getReservedBy());
+                unit.setReservedDate(statusRequest.getReservedDate());
+                if (statusRequest.getReservedUntil() == null) {
+                    unit.setReservedUntil(unit.getReservedDate().plusMinutes(30));
+                } else {
+                    unit.setReservedUntil(statusRequest.getReservedUntil());
+                }
+
                 Unit updatedUnit = unitRepository.save(unit);
                 UnitResponse response = unitMapper.toResponse(updatedUnit);
                 return ResponseEntity.ok(response);

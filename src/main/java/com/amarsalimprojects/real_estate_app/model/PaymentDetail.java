@@ -3,6 +3,10 @@ package com.amarsalimprojects.real_estate_app.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.amarsalimprojects.real_estate_app.enums.PaymentMethod;
 import com.amarsalimprojects.real_estate_app.enums.PaymentStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -13,6 +17,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -33,6 +38,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
+
 public class PaymentDetail {
 
     @Id
@@ -49,22 +56,25 @@ public class PaymentDetail {
 
     private String transactionId;
 
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference(value="buyer-payment-details")
+    @JsonBackReference(value = "buyer-payment-details")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
-    @JsonBackReference(value="invoice-payment-details")
+    @JsonBackReference(value = "invoice-payment-details")
     private Invoice invoice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)
-    @JsonBackReference(value="payment-payment-details")
+    @JsonBackReference(value = "payment-payment-details")
     private Payment payment;
 
     @Embedded

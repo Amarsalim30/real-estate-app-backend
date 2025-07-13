@@ -33,7 +33,7 @@ public class InvoiceService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unit not found"));
 
         // Check if invoice already exists for this unit
-        Optional<Invoice> existingInvoice = invoiceRepository.findByUnitId(unitId);
+        Optional<Invoice> existingInvoice = invoiceRepository.findInvoiceByUnitId(unitId);
         if (existingInvoice.isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Invoice already exists for this unit");
         }
@@ -46,7 +46,13 @@ public class InvoiceService {
                 .issuedDate(LocalDate.now())
                 .build();
 
-        return invoiceRepository.save(invoice);
+        invoiceRepository.save(invoice);
+        String paddedId = String.format("%05d", invoice.getId());
+        String year = String.valueOf(LocalDate.now().getYear());
+        String invoiceNumber = "INV-" + year + "-" + paddedId;
+
+        invoice.setInvoiceNumber(invoiceNumber);
+        return invoiceRepository.save(invoice); // update with final invoice number
     }
 
     public void processPayment(Long invoiceId, BigDecimal paymentAmount) {

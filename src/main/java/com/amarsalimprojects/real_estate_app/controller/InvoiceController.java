@@ -33,6 +33,27 @@ public class InvoiceController {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
+    @GetMapping("/migrate")
+    public ResponseEntity<String> migrateInvoiceNumbers() {
+        List<Invoice> invoices = invoiceRepository.findAll();
+        int migratedCount = 0;
+
+        for (Invoice inv : invoices) {
+            if (inv.getInvoiceNumber() == null || inv.getInvoiceNumber().isEmpty()) {
+                String padded = String.format("%05d", inv.getId());
+                String year = String.valueOf(inv.getIssuedDate().getYear());
+                inv.setInvoiceNumber("INV-" + year + "-" + padded);
+                migratedCount++;
+            }
+        }
+
+        if (migratedCount > 0) {
+            invoiceRepository.saveAll(invoices);
+        }
+
+        return ResponseEntity.ok("Invoice numbers migrated successfully: " + migratedCount + " updated.");
+    }
+
     // CREATE - Add a new invoice
     @PostMapping
     public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoice) {
@@ -46,8 +67,13 @@ public class InvoiceController {
             if (invoice.getStatus() == null) {
                 invoice.setStatus(InvoiceStatus.PENDING);
             }
-
             Invoice savedInvoice = invoiceRepository.save(invoice);
+            String paddedId = String.format("%05d", invoice.getId());
+            String year = String.valueOf(LocalDate.now().getYear());
+            String invoiceNumber = "INV-" + year + "-" + paddedId;
+
+            savedInvoice.setInvoiceNumber(invoiceNumber);
+            savedInvoice = invoiceRepository.save(invoice);
             return new ResponseEntity<>(savedInvoice, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -101,7 +127,7 @@ public class InvoiceController {
     @GetMapping("/buyer/{buyerId}")
     public ResponseEntity<List<Invoice>> getInvoicesByBuyerId(@PathVariable("buyerId") Long buyerId) {
         try {
-            List<Invoice> invoices = invoiceRepository.findByBuyerId(buyerId);
+            List<Invoice> invoices = invoiceRepository.findByBuyer_Id(buyerId);
             if (invoices.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
@@ -115,11 +141,11 @@ public class InvoiceController {
     @GetMapping("/unit/{unitId}")
     public ResponseEntity<Invoice> getInvoiceByUnitId(@PathVariable("unitId") Long unitId) {
         try {
-            Optional<Invoice> invoice = invoiceRepository.findByUnitId(unitId);
+            Optional<Invoice> invoice = invoiceRepository.findInvoiceByUnitId(unitId);
             if (invoice.isPresent()) {
                 return new ResponseEntity<>(invoice.get(), HttpStatus.OK);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
             }
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

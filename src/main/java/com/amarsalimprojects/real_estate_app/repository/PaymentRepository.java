@@ -22,13 +22,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByMethod(PaymentMethod method);
 
-    List<Payment> findByInvoiceId(Long invoiceId);
+    @Query("SELECT p FROM Payment p WHERE p.buyer.id = :buyerId")
+    List<Payment> findByBuyer_Id(@Param("buyerId") Long buyerId);
 
-    List<Payment> findByBuyerId(Long buyerId);
+    @Query("SELECT p FROM Payment p WHERE p.invoice.id = :invoiceId")
+    List<Payment> findByInvoice_Id(@Param("invoiceId") Long invoiceId);
 
-    List<Payment> findByBuyerIdAndStatus(Long buyerId, PaymentStatus status);
+    List<Payment> findByBuyer_IdAndStatus(Long buyerId, PaymentStatus status);
 
-    List<Payment> findByInvoiceIdAndStatus(Long invoiceId, PaymentStatus status);
+    List<Payment> findByInvoice_IdAndStatus(Long invoiceId, PaymentStatus status);
 
     List<Payment> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
@@ -55,4 +57,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // Add method to find MpesaPayment by checkout request ID
     @Query("SELECT mp FROM MpesaPayment mp WHERE mp.checkoutRequestId = :checkoutRequestId")
     Optional<MpesaPayment> findByCheckoutRequestId(@Param("checkoutRequestId") String checkoutRequestId);
+
+    boolean existsByInvoice_IdAndStatus(Long invoiceId, PaymentStatus success);
 }

@@ -41,8 +41,9 @@ public class UnitResponse {
     private List<String> images;
     private Long buyerId;
     private String buyerEmail;
-    private LocalDate reservedDate;
     private LocalDate soldDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime reservedDate;
+    private Long reservedBy;
 }

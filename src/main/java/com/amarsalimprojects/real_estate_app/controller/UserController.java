@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.amarsalimprojects.real_estate_app.dto.requests.LoginRequest;
 import com.amarsalimprojects.real_estate_app.dto.requests.UserStatistics;
+import com.amarsalimprojects.real_estate_app.dto.responses.UserResponse;
 import com.amarsalimprojects.real_estate_app.enums.UserRole;
+import com.amarsalimprojects.real_estate_app.mapper.UserMapper;
 import com.amarsalimprojects.real_estate_app.model.User;
 import com.amarsalimprojects.real_estate_app.repository.UserRepository;
 import com.amarsalimprojects.real_estate_app.service.EmailDispatcher;
@@ -1156,14 +1158,17 @@ public class UserController {
 
     // // AUTHENTICATION - Login user (basic check)
     @PostMapping("/login")
-    public ResponseEntity<User> loginUser(@RequestBody LoginRequest request) {
+    public ResponseEntity<UserResponse> loginUser(@RequestBody LoginRequest request) {
         try {
             Optional<User> user = userRepository.findByUsernameAndPassword(request.getUsername(), request.getPassword());
+
             if (user.isPresent()) {
-                return new ResponseEntity<>(user.get(), HttpStatus.OK);
+                UserResponse userResponse = UserMapper.toUserResponse(user.get());
+                return new ResponseEntity<>(userResponse, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
+
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -1171,12 +1176,14 @@ public class UserController {
 
     // // AUTHENTICATION - Login user by email
     @PostMapping("/login-email")
-    public ResponseEntity<User> loginUserByEmail(@RequestBody LoginRequest request) {
+    public ResponseEntity<UserResponse> loginUserByEmail(@RequestBody LoginRequest request) {
         try {
             Optional<User> user = userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword());
 
             if (user.isPresent()) {
-                return new ResponseEntity<>(user.get(), HttpStatus.OK);
+                UserResponse userResponse = UserMapper.toUserResponse(user.get());
+
+                return new ResponseEntity<>(userResponse, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }

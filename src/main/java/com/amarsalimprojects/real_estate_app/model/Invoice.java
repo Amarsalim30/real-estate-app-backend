@@ -6,6 +6,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.amarsalimprojects.real_estate_app.enums.InvoiceStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -14,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -36,11 +41,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Invoice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "invoice_number", unique = true, nullable = true, length = 20)
+    private String invoiceNumber;
 
     @Enumerated(EnumType.STRING)
     private InvoiceStatus status;
@@ -49,7 +58,10 @@ public class Invoice {
     private LocalDate issuedDate;
     private LocalDate dueDate;
 
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     // FK to Unit (1:1)
@@ -60,7 +72,7 @@ public class Invoice {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference(value = "buyer-invoices")
+    @JsonIgnore
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -123,4 +135,13 @@ public class Invoice {
                 .map(MpesaPayment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    public Long getBuyerId() {
+        return buyer != null ? buyer.getId() : null;
+    }
+
+    public Long getUnitId() {
+        return unit != null ? unit.getId() : null;
+    }
+
 }

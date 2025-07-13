@@ -78,7 +78,7 @@ public class Payment {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @JsonBackReference(value = "buyer-payments")
+    @JsonBackReference("buyer-payments")
     private BuyerProfile buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -103,4 +103,13 @@ public class Payment {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public Long getBuyerId() {
+        return buyer != null ? buyer.getId() : null;
+    }
+
+    public Long getInvoiceId() {
+        return invoice != null ? invoice.getId() : null;
+    }
+
 }
