@@ -109,8 +109,8 @@ public class PurchaseService {
                     var stkResponse = mpesaStkService.initiateStkPush(
                             dto.getMpesaNumber(),
                             payment.getAmount(),
-                            invoice.getId()
-                    );
+                            payment.getId(),
+                            invoice.getId());
                     invoice.setCheckoutRequestId(stkResponse.getCheckoutRequestId());
                     invoiceRepository.save(invoice); // update with requestId
 
@@ -121,22 +121,7 @@ public class PurchaseService {
                     paymentRepository.save(payment);
                 }
             }
-            // case BANK_TRANSFER -> {
-            //     if (dto.getBankDetails() != null) {
-            //         PaymentDetail detail = PaymentDetail.builder()
-            //                 .payment(payment)
-            //                 .invoice(invoice)
-            //                 .buyer(buyer)
-            //                 .method(PaymentMethod.WIRE_TRANSFER)
-            //                 .bankName(dto.getBankDetails().getBankName())
-            //                 .bankAccountNumber(dto.getBankDetails().getAccountNumber())
-            //                 .bankRoutingNumber(dto.getBankDetails().getRoutingNumber())
-            //                 .build();
 
-            //         paymentDetailRepository.save(detail);
-            //     }
-            //     message = "Bank details submitted. Awaiting confirmation.";
-            // }
             case MPESA_PAYBILL -> {
                 // No STK Push; user is instructed to pay via M-Pesa manually
                 message = "Use Paybill 123456, Account: UNIT-" + unit.getId();
@@ -167,10 +152,12 @@ public class PurchaseService {
     public void handleSuccessfulPayment(String checkoutRequestId) {
         try {
             // 1. Find MpesaPayment by checkoutRequestId
-            Optional<MpesaPayment> optionalMpesaPayment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
+            Optional<MpesaPayment> optionalMpesaPayment = mpesaPaymentRepository
+                    .findByCheckoutRequestId(checkoutRequestId);
 
             if (optionalMpesaPayment.isEmpty()) {
-                throw new EntityNotFoundException("M-Pesa payment not found for checkout request ID: " + checkoutRequestId);
+                throw new EntityNotFoundException(
+                        "M-Pesa payment not found for checkout request ID: " + checkoutRequestId);
             }
 
             MpesaPayment mpesaPayment = optionalMpesaPayment.get();
@@ -252,10 +239,12 @@ public class PurchaseService {
     @Transactional
     public void handlePartialPayment(String checkoutRequestId) {
         try {
-            Optional<MpesaPayment> optionalMpesaPayment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
+            Optional<MpesaPayment> optionalMpesaPayment = mpesaPaymentRepository
+                    .findByCheckoutRequestId(checkoutRequestId);
 
             if (optionalMpesaPayment.isEmpty()) {
-                throw new EntityNotFoundException("M-Pesa payment not found for checkout request ID: " + checkoutRequestId);
+                throw new EntityNotFoundException(
+                        "M-Pesa payment not found for checkout request ID: " + checkoutRequestId);
             }
 
             MpesaPayment mpesaPayment = optionalMpesaPayment.get();

@@ -10,5 +10,6 @@ public enum UnitType {
     DUPLEX,
     VILLA,
     TOWNHOUSE,
-    COMMERCIAL_SPACE
+    COMMERCIAL_SPACE,
+    FOUR_BEDROOM
 }

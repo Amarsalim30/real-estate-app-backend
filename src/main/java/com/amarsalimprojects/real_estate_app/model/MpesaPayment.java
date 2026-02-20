@@ -25,12 +25,12 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "mpesa_payments", indexes = {
-    @Index(name = "idx_mpesa_checkout_request", columnList = "checkout_request_id", unique = true),
-    @Index(name = "idx_mpesa_merchant_request", columnList = "merchant_request_id"),
-    @Index(name = "idx_mpesa_phone", columnList = "phone_number"),
-    @Index(name = "idx_mpesa_status", columnList = "status"),
-    @Index(name = "idx_mpesa_receipt", columnList = "mpesa_receipt_number"),
-    @Index(name = "idx_mpesa_buyer", columnList = "buyer_id")
+        @Index(name = "idx_mpesa_checkout_request", columnList = "checkout_request_id", unique = true),
+        @Index(name = "idx_mpesa_merchant_request", columnList = "merchant_request_id"),
+        @Index(name = "idx_mpesa_phone", columnList = "phone_number"),
+        @Index(name = "idx_mpesa_status", columnList = "status"),
+        @Index(name = "idx_mpesa_receipt", columnList = "mpesa_receipt_number"),
+        @Index(name = "idx_mpesa_buyer", columnList = "buyer_id")
 })
 @Data
 @NoArgsConstructor
@@ -95,6 +95,11 @@ public class MpesaPayment {
     @JoinColumn(name = "invoice_id")
     @JsonBackReference(value = "invoice-mpesa-payments")
     private Invoice invoice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    @JsonBackReference(value = "payment-mpesa-payments")
+    private Payment payment;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_detail_id")

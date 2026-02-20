@@ -30,7 +30,7 @@ mpesa:
   consumer-secret: ${MPESA_CONSUMER_SECRET}
   passkey: ${MPESA_PASSKEY}
   shortcode: ${MPESA_SHORTCODE}
-  callback-url: https://4ca2531ecab5.ngrok-free.app/api/payments/mpesa/callback
+  callback-url: https://b8d70dea113f.ngrok-free.app/api/payments/mpesa/callback
   base-url: https://sandbox.safaricom.co.ke
   stk-push-url: /mpesa/stkpush/v1/processrequest
   token-url: /oauth/v1/generate?grant_type=client_credentials

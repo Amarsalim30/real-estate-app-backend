@@ -21,8 +21,10 @@ import com.amarsalimprojects.real_estate_app.controller.PaymentController;
 import com.amarsalimprojects.real_estate_app.dto.responses.StkPushResponse;
 import com.amarsalimprojects.real_estate_app.model.Invoice;
 import com.amarsalimprojects.real_estate_app.model.MpesaPayment;
+import com.amarsalimprojects.real_estate_app.model.Payment;
 import com.amarsalimprojects.real_estate_app.repository.InvoiceRepository;
 import com.amarsalimprojects.real_estate_app.repository.MpesaPaymentRepository;
+import com.amarsalimprojects.real_estate_app.repository.PaymentRepository;
 
 @Service
 public class MpesaStkService {
@@ -34,24 +36,29 @@ public class MpesaStkService {
         private final RestTemplate restTemplate;
         private final MpesaPaymentRepository mpesaPaymentRepository;
         private final InvoiceRepository invoiceRepository;
+        private final PaymentRepository paymentRepository;
 
         BigDecimal testAmount = new BigDecimal("1.00");
 
         public MpesaStkService(MpesaConfig config, MpesaAuthService authService,
                         RestTemplate restTemplate, MpesaPaymentRepository mpesaPaymentRepository,
-                        InvoiceRepository invoiceRepository) {
+                        InvoiceRepository invoiceRepository, PaymentRepository paymentRepository) {
                 this.config = config;
                 this.authService = authService;
                 this.restTemplate = restTemplate;
                 this.mpesaPaymentRepository = mpesaPaymentRepository;
                 this.invoiceRepository = invoiceRepository;
+                this.paymentRepository = paymentRepository;
 
         }
 
-        public StkPushResponse initiateStkPush(String phone, BigDecimal amount, Long invoiceId) {
+        public StkPushResponse initiateStkPush(String phone, BigDecimal amount, Long paymentId, Long invoiceId) {
                 logger.info("[STK INITIATED] Invoice ID: {}", invoiceId);
                 Invoice invoice = invoiceRepository.findById(invoiceId)
                                 .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+                Payment payment = paymentRepository.findById(paymentId)
+                                .orElseThrow(() -> new RuntimeException("Payment not found"));
 
                 String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
                 String password = Base64.getEncoder().encodeToString(
@@ -66,7 +73,7 @@ public class MpesaStkService {
                 body.put("Password", password);
                 body.put("Timestamp", timestamp);
                 body.put("TransactionType", "CustomerPayBillOnline");
-                body.put("Amount", testAmount);
+                body.put("Amount", amount);
                 body.put("PartyA", phone);
                 body.put("PartyB", config.getShortcode());
                 body.put("PhoneNumber", phone);
@@ -93,8 +100,9 @@ public class MpesaStkService {
                 Map<String, Object> responseBody = response.getBody();
                 logger.info("[STK RESPONSE BODY] {}", responseBody);
 
-                MpesaPayment payment = MpesaPayment.builder()
+                MpesaPayment mpesaPayment = MpesaPayment.builder()
                                 .invoice(invoice)
+                                .payment(payment)
                                 .amount(amount)
                                 .status("PENDING")
                                 .checkoutRequestId((String) responseBody.get("CheckoutRequestID"))
@@ -102,11 +110,11 @@ public class MpesaStkService {
                                 .phoneNumber(phone)
                                 .build();
 
-                mpesaPaymentRepository.save(payment);
+                mpesaPaymentRepository.save(mpesaPayment);
 
                 return StkPushResponse.success(
-                                payment.getMerchantRequestId(),
-                                payment.getCheckoutRequestId(),
+                                mpesaPayment.getMerchantRequestId(),
+                                mpesaPayment.getCheckoutRequestId(),
                                 (String) responseBody.get("ResponseCode"),
                                 (String) responseBody.get("ResponseDescription"),
                                 (String) responseBody.get("CustomerMessage"));

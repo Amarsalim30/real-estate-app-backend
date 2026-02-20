@@ -34,10 +34,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "payments", indexes = {
-    @Index(name = "idx_payment_buyer", columnList = "buyer_id"),
-    @Index(name = "idx_payment_invoice", columnList = "invoice_id"),
-    @Index(name = "idx_payment_status", columnList = "status"),
-    @Index(name = "idx_payment_date", columnList = "payment_date")
+        @Index(name = "idx_payment_buyer", columnList = "buyer_id"),
+        @Index(name = "idx_payment_invoice", columnList = "invoice_id"),
+        @Index(name = "idx_payment_status", columnList = "status"),
+        @Index(name = "idx_payment_date", columnList = "payment_date")
 })
 @Data
 @NoArgsConstructor
@@ -90,6 +90,11 @@ public class Payment {
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "payment-payment-details")
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "payment-mpesa-payments")
+    private List<MpesaPayment> mpesaPayments = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

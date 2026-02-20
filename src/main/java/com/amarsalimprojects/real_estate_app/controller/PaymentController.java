@@ -332,7 +332,8 @@ public class PaymentController {
 
     // UPDATE - Update payment status
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Payment> updatePaymentStatus(@PathVariable("id") Long id, @RequestParam("status") PaymentStatus status) {
+    public ResponseEntity<Payment> updatePaymentStatus(@PathVariable("id") Long id,
+            @RequestParam("status") PaymentStatus status) {
         try {
             Optional<Payment> existingPayment = paymentRepository.findById(id);
             if (existingPayment.isPresent()) {
@@ -351,7 +352,8 @@ public class PaymentController {
 
     // UPDATE - Update payment amount
     @PatchMapping("/{id}/amount")
-    public ResponseEntity<Payment> updatePaymentAmount(@PathVariable("id") Long id, @RequestParam("amount") BigDecimal amount) {
+    public ResponseEntity<Payment> updatePaymentAmount(@PathVariable("id") Long id,
+            @RequestParam("amount") BigDecimal amount) {
         try {
             Optional<Payment> existingPayment = paymentRepository.findById(id);
             if (existingPayment.isPresent()) {
@@ -370,7 +372,8 @@ public class PaymentController {
 
     // UPDATE - Update payment method
     @PatchMapping("/{id}/method")
-    public ResponseEntity<Payment> updatePaymentMethod(@PathVariable("id") Long id, @RequestParam("method") PaymentMethod method) {
+    public ResponseEntity<Payment> updatePaymentMethod(@PathVariable("id") Long id,
+            @RequestParam("method") PaymentMethod method) {
         try {
             Optional<Payment> existingPayment = paymentRepository.findById(id);
             if (existingPayment.isPresent()) {
@@ -527,7 +530,8 @@ public class PaymentController {
         try {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23, 59, 59);
+            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23,
+                    59, 59);
             List<Payment> payments = paymentRepository.findByCreatedAtBetween(startOfMonth, endOfMonth);
             if (payments.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -557,7 +561,8 @@ public class PaymentController {
         try {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
-            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23, 59, 59);
+            LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth()).toLocalDate().atTime(23,
+                    59, 59);
             BigDecimal totalAmount = paymentRepository.getTotalAmountByDateRange(startOfMonth, endOfMonth);
             return new ResponseEntity<>(totalAmount != null ? totalAmount : BigDecimal.ZERO, HttpStatus.OK);
         } catch (Exception e) {
@@ -625,7 +630,7 @@ public class PaymentController {
         }
     }
 
-// GET - Get revenue by project
+    // GET - Get revenue by project
     @GetMapping("/revenue/project/{projectId}")
     public ResponseEntity<BigDecimal> getRevenueByProject(@PathVariable("projectId") Long projectId) {
         try {
@@ -636,7 +641,7 @@ public class PaymentController {
         }
     }
 
-// GET - Get overdue payments
+    // GET - Get overdue payments
     @GetMapping("/overdue")
     public ResponseEntity<List<Payment>> getOverduePayments() {
         try {
@@ -650,7 +655,7 @@ public class PaymentController {
         }
     }
 
-// POST - Validate payment amount
+    // POST - Validate payment amount
     @PostMapping("/validate-amount")
     public ResponseEntity<Boolean> validatePaymentAmount(
             @RequestParam("invoiceId") Long invoiceId,
@@ -663,7 +668,7 @@ public class PaymentController {
         }
     }
 
-// PATCH - Mark payment as failed
+    // PATCH - Mark payment as failed
     @PatchMapping("/{id}/mark-failed")
     public ResponseEntity<Payment> markPaymentAsFailed(@PathVariable("id") Long id) {
         try {
@@ -681,12 +686,11 @@ public class PaymentController {
         }
     }
 
-    //1
+    // 1
     @PostMapping("/unit/{unitId}/purchase")
     public ResponseEntity<?> purchaseUnit(
             @PathVariable Long unitId,
-            @Valid @RequestBody PurchaseUnitRequest dto
-    ) {
+            @Valid @RequestBody PurchaseUnitRequest dto) {
         try {
             // Validate M-Pesa number is provided for STK Push
             if ("MPESA_STKPUSH".equals(dto.getPaymentMethod())
@@ -694,8 +698,7 @@ public class PaymentController {
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "success", false,
-                                "message", "M-Pesa number is required for STK Push payments"
-                        ));
+                                "message", "M-Pesa number is required for STK Push payments"));
             }
 
             PurchaseUnitResponse response = purchaseService.handlePurchase(unitId, dto);
@@ -705,65 +708,65 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of(
                             "success", false,
-                            "message", e.getMessage()
-                    ));
+                            "message", e.getMessage()));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(
                             "success", false,
-                            "message", e.getMessage()
-                    ));
+                            "message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(
                             "success", false,
-                            "message", "Failed to process purchase: " + e.getMessage()
-                    ));
+                            "message", "Failed to process purchase: " + e.getMessage()));
         }
     }
 
     // @PostMapping("/mpesa-stk/unit/{unitId}/purchase")
     // public ResponseEntity<?> initiateStkPush(@Valid
-    //         @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
-    //     try {
-    //         // Validate phone number format (Kenyan format)
-    //         if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
-    //             return ResponseEntity.badRequest()
-    //                     .body(Map.of(
-    //                             "success", false,
-    //                             "message", "Invalid phone number format. Use format: 254XXXXXXXXX"
-    //                     ));
-    //         }
-    //         // Validate amount
-    //         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
-    //             return ResponseEntity.badRequest()
-    //                     .body(Map.of(
-    //                             "success", false,
-    //                             "message", "Amount must be greater than 0"
-    //                     ));
-    //         }
-    //         Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(), request.getBuyerId());
-    //         request.setInvoiceId(invoice.getId());
-    //         StkPushResponse response = mpesaStkService.initiateStkPush(request.getMpesaNumber(), request.getTotalAmount(), request.getInvoiceId());
-    //         return ResponseEntity.ok(response);
-    //     } catch (RuntimeException e) {
-    //         return ResponseEntity.badRequest()
-    //                 .body(Map.of(
-    //                         "success", false,
-    //                         "message", e.getMessage()
-    //                 ));
-    //     } catch (Exception e) {
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(Map.of(
-    //                         "success", false,
-    //                         "message", "Failed to initiate payment: " + e.getMessage()
-    //                 ));
-    //     }
+    // @RequestBody StkPushRequest request, @PathVariable("unitId") Long unitId) {
+    // try {
+    // // Validate phone number format (Kenyan format)
+    // if (!isValidKenyanPhoneNumber(request.getMpesaNumber())) {
+    // return ResponseEntity.badRequest()
+    // .body(Map.of(
+    // "success", false,
+    // "message", "Invalid phone number format. Use format: 254XXXXXXXXX"
+    // ));
+    // }
+    // // Validate amount
+    // if (request.getTotalAmount() == null ||
+    // request.getTotalAmount().compareTo(BigDecimal.ONE) < 0) {
+    // return ResponseEntity.badRequest()
+    // .body(Map.of(
+    // "success", false,
+    // "message", "Amount must be greater than 0"
+    // ));
+    // }
+    // Invoice invoice = invoiceService.createInvoiceForUnit(request.getUnitId(),
+    // request.getBuyerId());
+    // request.setInvoiceId(invoice.getId());
+    // StkPushResponse response =
+    // mpesaStkService.initiateStkPush(request.getMpesaNumber(),
+    // request.getTotalAmount(), request.getInvoiceId());
+    // return ResponseEntity.ok(response);
+    // } catch (RuntimeException e) {
+    // return ResponseEntity.badRequest()
+    // .body(Map.of(
+    // "success", false,
+    // "message", e.getMessage()
+    // ));
+    // } catch (Exception e) {
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body(Map.of(
+    // "success", false,
+    // "message", "Failed to initiate payment: " + e.getMessage()
+    // ));
+    // }
     // }
     // GET - Check STK Push status
     @GetMapping("/mpesa/status/{checkoutRequestId}")
-    public ResponseEntity<?> checkStkPushStatus(@PathVariable("checkoutRequestId") String checkoutRequestId
-    ) {
+    public ResponseEntity<?> checkStkPushStatus(@PathVariable("checkoutRequestId") String checkoutRequestId) {
         try {
             Optional<MpesaPayment> payment = mpesaPaymentRepository.findByCheckoutRequestId(checkoutRequestId);
 
@@ -792,15 +795,13 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(
                             "success", false,
-                            "message", "Failed to check payment status: " + e.getMessage()
-                    ));
+                            "message", "Failed to check payment status: " + e.getMessage()));
         }
     }
 
     // GET - Get all M-Pesa payments for an invoice
     @GetMapping("/mpesa/invoice/{invoiceId}")
-    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByInvoice(@PathVariable("invoiceId") Long invoiceId
-    ) {
+    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByInvoice(@PathVariable("invoiceId") Long invoiceId) {
         try {
             List<MpesaPayment> payments = mpesaPaymentRepository.findByInvoiceIdOrderByCreatedAtDesc(invoiceId);
 
@@ -816,8 +817,7 @@ public class PaymentController {
 
     // GET - Get M-Pesa payment history for a buyer
     @GetMapping("/mpesa/buyer/{buyerId}")
-    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByBuyer(@PathVariable("buyerId") Long buyerId
-    ) {
+    public ResponseEntity<List<MpesaPayment>> getMpesaPaymentsByBuyer(@PathVariable("buyerId") Long buyerId) {
         try {
             List<MpesaPayment> payments = mpesaPaymentRepository.findByBuyerIdOrderByCreatedAtDesc(buyerId);
 
@@ -845,7 +845,7 @@ public class PaymentController {
         return cleanNumber.matches("^254[17]\\d{8}$");
     }
 
-    //2
+    // 2
     @PostMapping("/mpesa/callback")
     public ResponseEntity<?> handleCallback(@RequestBody MpesaCallbackRequest request) {
         try {
